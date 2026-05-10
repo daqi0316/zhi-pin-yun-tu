@@ -3,18 +3,55 @@ import {
   Briefcase,
   Plus,
   Search,
-  MapPin,
   DollarSign,
   Clock,
   X,
+  Pencil,
+  Trash2,
+  Eye,
+  Star,
 } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
+
+const statusColors: Record<string, { bg: string; text: string }> = {
+  active: { bg: '#06D6A012', text: '#06D6A0' },
+  paused: { bg: '#F59E0B12', text: '#F59E0B' },
+  closed: { bg: '#94A3B812', text: '#94A3B8' },
+}
+
+const statusLabel: Record<string, string> = { active: '招聘中', paused: '暂停', closed: '已关闭' }
+
+type PositionDetail = {
+  id: number
+  title: string
+  company: string
+  department: string | null
+  description: string | null
+  requiredSkills: string[] | string
+  bonusSkills: string[] | string
+  minExperience: number | null
+  maxExperience: number | null
+  salaryMin: number | null
+  salaryMax: number | null
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+function parseSkills(s: string[] | string | null | undefined): string[] {
+  if (!s) return []
+  if (Array.isArray(s)) return s
+  try { return JSON.parse(s) } catch { return [] }
+}
 
 export default function Positions() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('全部')
   const [showCreate, setShowCreate] = useState(false)
+  const [selectedPos, setSelectedPos] = useState<PositionDetail | null>(null)
+  const [editMode, setEditMode] = useState(false)
   const [newPos, setNewPos] = useState({ title: '', company: '', department: '', description: '', requiredSkills: '', bonusSkills: '', minExperience: '', maxExperience: '', salaryMin: '', salaryMax: '' })
+  const [editForm, setEditForm] = useState({ title: '', company: '', department: '', description: '', requiredSkills: '', bonusSkills: '', minExperience: '', maxExperience: '', salaryMin: '', salaryMax: '', status: '' })
 
   const { data: positions = [], refetch } = trpc.position.list.useQuery({
     search: search || undefined,
@@ -22,12 +59,8 @@ export default function Positions() {
   })
 
   const createMutation = trpc.position.create.useMutation({ onSuccess: () => { refetch(); setShowCreate(false); setNewPos({ title: '', company: '', department: '', description: '', requiredSkills: '', bonusSkills: '', minExperience: '', maxExperience: '', salaryMin: '', salaryMax: '' }) } })
-
-  const statusColors: Record<string, { bg: string; text: string }> = {
-    active: { bg: '#06D6A012', text: '#06D6A0' },
-    paused: { bg: '#F59E0B12', text: '#F59E0B' },
-    closed: { bg: '#94A3B812', text: '#94A3B8' },
-  }
+  const updateMutation = trpc.position.update.useMutation({ onSuccess: () => { refetch(); setEditMode(false); setSelectedPos(null) } })
+  const deleteMutation = trpc.position.delete.useMutation({ onSuccess: () => { refetch(); setSelectedPos(null) } })
 
   const handleCreate = () => {
     if (!newPos.title || !newPos.company) return
@@ -43,6 +76,53 @@ export default function Positions() {
       salaryMin: newPos.salaryMin ? Number(newPos.salaryMin) : undefined,
       salaryMax: newPos.salaryMax ? Number(newPos.salaryMax) : undefined,
     })
+  }
+
+  const openDetail = (pos: any) => {
+    const skills = parseSkills(pos.requiredSkills)
+    const bonus = parseSkills(pos.bonusSkills)
+    setSelectedPos({ ...pos, requiredSkills: skills, bonusSkills: bonus })
+    setEditForm({
+      title: pos.title || '',
+      company: pos.company || '',
+      department: pos.department || '',
+      description: pos.description || '',
+      requiredSkills: skills.join(', '),
+      bonusSkills: bonus.join(', '),
+      minExperience: pos.minExperience ?? '',
+      maxExperience: pos.maxExperience ?? '',
+      salaryMin: pos.salaryMin ?? '',
+      salaryMax: pos.salaryMax ?? '',
+      status: pos.status || 'active',
+    })
+    setEditMode(false)
+  }
+
+  const handleUpdate = () => {
+    if (!selectedPos) return
+    updateMutation.mutate({
+      id: selectedPos.id,
+      data: {
+        title: editForm.title || undefined,
+        company: editForm.company || undefined,
+        department: editForm.department || undefined,
+        description: editForm.description || undefined,
+        requiredSkills: editForm.requiredSkills ? editForm.requiredSkills.split(',').map(s => s.trim()) : undefined,
+        bonusSkills: editForm.bonusSkills ? editForm.bonusSkills.split(',').map(s => s.trim()) : undefined,
+        minExperience: editForm.minExperience ? Number(editForm.minExperience) : undefined,
+        maxExperience: editForm.maxExperience ? Number(editForm.maxExperience) : undefined,
+        salaryMin: editForm.salaryMin ? Number(editForm.salaryMin) : undefined,
+        salaryMax: editForm.salaryMax ? Number(editForm.salaryMax) : undefined,
+        status: editForm.status || undefined,
+      },
+    })
+  }
+
+  const handleDelete = () => {
+    if (!selectedPos) return
+    if (confirm(`确定删除岗位「${selectedPos.title}」？此操作不可恢复。`)) {
+      deleteMutation.mutate(selectedPos.id)
+    }
   }
 
   return (
@@ -89,17 +169,21 @@ export default function Positions() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {positions.map((pos: any) => {
-          const requiredSkills: string[] = typeof pos.requiredSkills === 'string' ? JSON.parse(pos.requiredSkills || '[]') : (pos.requiredSkills || [])
+          const requiredSkills = parseSkills(pos.requiredSkills)
           const colors = statusColors[pos.status] || statusColors['active']
           return (
-            <div key={pos.id} className="bg-white rounded-2xl border border-slate-200/60 p-5 hover:shadow-lg hover:shadow-slate-200/40 transition-all cursor-pointer">
+            <div
+              key={pos.id}
+              className="bg-white rounded-2xl border border-slate-200/60 p-5 hover:shadow-lg hover:shadow-slate-200/40 transition-all cursor-pointer"
+              onClick={() => openDetail(pos)}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm text-[#1E293B] truncate">{pos.title}</h3>
                   <p className="text-xs text-[#94A3B8] mt-0.5">{pos.company}{pos.department ? ` · ${pos.department}` : ''}</p>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ml-2" style={{ background: colors.bg, color: colors.text }}>
-                  {pos.status === 'active' ? '招聘中' : pos.status === 'paused' ? '暂停' : '已关闭'}
+                  {statusLabel[pos.status] || pos.status}
                 </span>
               </div>
 
@@ -123,7 +207,6 @@ export default function Positions() {
                 {(pos.salaryMin != null || pos.salaryMax != null) && (
                   <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{(pos.salaryMin ?? 0) / 1000}k-{(pos.salaryMax ?? 0) / 1000}k</span>
                 )}
-                {(pos as any).location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{(pos as any).location}</span>}
               </div>
             </div>
           )
@@ -203,6 +286,187 @@ export default function Positions() {
                   {createMutation.isPending ? '创建中...' : '创建岗位'}
                 </button>
                 <button onClick={() => setShowCreate(false)} className="flex-1 h-10 border border-slate-200 text-[#475569] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedPos && !editMode && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setSelectedPos(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-[640px] max-h-[85vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1E293B]">{selectedPos.title}</h2>
+                    <p className="text-sm text-[#94A3B8]">{selectedPos.company}{selectedPos.department ? ` · ${selectedPos.department}` : ''}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setEditMode(true)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors" title="编辑">
+                    <Pencil className="w-4 h-4 text-[#475569]" />
+                  </button>
+                  <button onClick={handleDelete} disabled={deleteMutation.isPending} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors" title="删除">
+                    <Trash2 className="w-4 h-4 text-[#FF5A65]" />
+                  </button>
+                  <button onClick={() => setSelectedPos(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                    <X className="w-4 h-4 text-slate-400" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mb-5">
+                <span className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: statusColors[selectedPos.status]?.bg, color: statusColors[selectedPos.status]?.text }}>
+                  {statusLabel[selectedPos.status] || selectedPos.status}
+                </span>
+                <span className="text-xs text-[#94A3B8]">创建于 {new Date(selectedPos.createdAt).toLocaleDateString('zh-CN')}</span>
+              </div>
+
+              {selectedPos.description && (
+                <div className="mb-5">
+                  <h3 className="text-sm font-medium text-[#1E293B] mb-2">岗位描述</h3>
+                  <p className="text-sm text-[#475569] leading-relaxed bg-slate-50 rounded-xl p-4">{selectedPos.description}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 mb-5">
+                {(selectedPos.minExperience != null || selectedPos.maxExperience != null) && (
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="w-4 h-4 text-[#2D8FF0]" />
+                      <span className="text-xs text-[#94A3B8]">经验要求</span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#1E293B]">{selectedPos.minExperience ?? 0} - {selectedPos.maxExperience ?? '?'} 年</p>
+                  </div>
+                )}
+                {(selectedPos.salaryMin != null || selectedPos.salaryMax != null) && (
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <DollarSign className="w-4 h-4 text-[#06D6A0]" />
+                      <span className="text-xs text-[#94A3B8]">薪资范围</span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#1E293B]">{((selectedPos.salaryMin ?? 0) / 1000).toFixed(0)}k - {((selectedPos.salaryMax ?? 0) / 1000).toFixed(0)}k / 月</p>
+                  </div>
+                )}
+              </div>
+
+              {Array.isArray(selectedPos.requiredSkills) && selectedPos.requiredSkills.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-[#2D8FF0]" />
+                    必备技能
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedPos.requiredSkills.map((skill: string) => (
+                      <span key={skill} className="px-3 py-1 bg-[#2D8FF0]/8 text-[#2D8FF0] rounded-lg text-xs font-medium">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {Array.isArray(selectedPos.bonusSkills) && selectedPos.bonusSkills.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-[#F59E0B]" />
+                    加分技能
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedPos.bonusSkills.map((skill: string) => (
+                      <span key={skill} className="px-3 py-1 bg-[#F59E0B]/8 text-[#F59E0B] rounded-lg text-xs font-medium">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedPos && editMode && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => { setEditMode(false) }} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-[600px] max-h-[85vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-[#1E293B]">编辑岗位</h2>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setEditMode(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100"><X className="w-4 h-4 text-slate-400" /></button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">岗位状态</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                    className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
+                  >
+                    <option value="active">招聘中</option>
+                    <option value="paused">暂停</option>
+                    <option value="closed">已关闭</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">岗位名称 *</label>
+                  <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">所属公司 *</label>
+                  <input value={editForm.company} onChange={(e) => setEditForm({ ...editForm, company: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">部门</label>
+                  <input value={editForm.department} onChange={(e) => setEditForm({ ...editForm, department: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">岗位描述</label>
+                  <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="w-full p-3 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20 resize-none" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">必备技能（逗号分隔）</label>
+                  <input value={editForm.requiredSkills} onChange={(e) => setEditForm({ ...editForm, requiredSkills: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">加分技能（逗号分隔）</label>
+                  <input value={editForm.bonusSkills} onChange={(e) => setEditForm({ ...editForm, bonusSkills: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">最低经验（年）</label>
+                    <input type="number" value={editForm.minExperience} onChange={(e) => setEditForm({ ...editForm, minExperience: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">最高经验（年）</label>
+                    <input type="number" value={editForm.maxExperience} onChange={(e) => setEditForm({ ...editForm, maxExperience: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">最低月薪（元）</label>
+                    <input type="number" value={editForm.salaryMin} onChange={(e) => setEditForm({ ...editForm, salaryMin: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">最高月薪（元）</label>
+                    <input type="number" value={editForm.salaryMax} onChange={(e) => setEditForm({ ...editForm, salaryMax: e.target.value })} className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleUpdate}
+                  disabled={updateMutation.isPending}
+                  className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {updateMutation.isPending ? '保存中...' : '保存修改'}
+                </button>
+                <button onClick={() => setEditMode(false)} className="flex-1 h-10 border border-slate-200 text-[#475569] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">取消</button>
               </div>
             </div>
           </div>
