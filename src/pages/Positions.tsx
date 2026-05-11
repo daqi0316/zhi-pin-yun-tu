@@ -103,6 +103,11 @@ export default function Positions() {
     }
   );
 
+  const { data: positionStats } = trpc.position.stats.useQuery(
+    selectedPos?.id!,
+    { enabled: !!selectedPos?.id }
+  );
+
   const { data: matchResult, isPending: matchPending } =
     trpc.scoring.matchCandidates.useQuery(
       { positionId: matchPositionId! },
@@ -629,6 +634,18 @@ export default function Positions() {
                     <Users className="w-3 h-3" />
                     {matchCounts[selectedPos.id].matched}人匹配
                   </button>
+                )}
+                {positionStats && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#06D6A0]/10 text-[#06D6A0] flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    {positionStats.interviewCount}面试
+                  </span>
+                )}
+                {positionStats && positionStats.offerCount > 0 && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    {positionStats.offerCount} Offer
+                  </span>
                 )}
               </div>
 

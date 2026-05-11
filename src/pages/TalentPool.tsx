@@ -10,6 +10,11 @@ import {
   MessageSquare,
   ChevronDown,
   X,
+  Clock,
+  UserPlus,
+  FileText,
+  Bell,
+  ArrowRight,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
@@ -56,6 +61,7 @@ export default function TalentPool() {
   const [sourceFilter, setSourceFilter] = useState("全部");
   const [selectedCandidate, setSelectedCandidate] =
     useState<CandidateDetail | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newCandidate, setNewCandidate] = useState({
     name: "",
@@ -80,6 +86,19 @@ export default function TalentPool() {
   });
 
   const candidates = data?.items ?? [];
+
+  const { data: candidateDetail } = trpc.candidate.detail.useQuery(
+    selectedId!,
+    { enabled: !!selectedId }
+  );
+
+  const timelineIcons: Record<string, typeof Clock> = {
+    candidate: UserPlus,
+    interview: FileText,
+    offer: Star,
+    alert: Bell,
+    stage: ArrowRight,
+  };
 
   const createMutation = trpc.candidate.create.useMutation({
     onSuccess: () => {
@@ -252,27 +271,7 @@ export default function TalentPool() {
                   <tr
                     key={c.id}
                     className="hover:bg-slate-50/50 transition-colors cursor-pointer"
-                    onClick={() =>
-                      setSelectedCandidate({
-                        id: c.id,
-                        name: c.name,
-                        avatar: c.avatar,
-                        position: c.position,
-                        company: c.company,
-                        experience: c.experience,
-                        skills: Array.isArray(c.skills) ? c.skills : [],
-                        education: c.education,
-                        status: c.status,
-                        matchScore: c.matchScore,
-                        intentScore: c.intentScore,
-                        source: c.source,
-                        phone: c.phone,
-                        email: c.email,
-                        location: c.location,
-                        salary: c.salary,
-                        stage: c.stage,
-                      })
-                    }
+                    onClick={() => setSelectedId(c.id)}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -373,137 +372,365 @@ export default function TalentPool() {
       )}
 
       {/* Detail Drawer */}
-      {selectedCandidate && (
+      {selectedId && (
         <div className="fixed inset-0 z-[70] flex justify-end">
           <div
             className="absolute inset-0 bg-black/20"
-            onClick={() => setSelectedCandidate(null)}
+            onClick={() => {
+              setSelectedId(null);
+              setSelectedCandidate(null);
+            }}
           />
-          <div className="relative w-[480px] h-full bg-white shadow-2xl overflow-y-auto custom-scrollbar">
+          <div className="relative w-[520px] h-full bg-white shadow-2xl overflow-y-auto custom-scrollbar">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-[#1E293B]">
                   候选人详情
                 </h2>
                 <button
-                  onClick={() => setSelectedCandidate(null)}
+                  onClick={() => {
+                    setSelectedId(null);
+                    setSelectedCandidate(null);
+                  }}
                   className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors text-slate-400"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-2xl font-bold">
-                  {selectedCandidate.name?.charAt(0) || "?"}
+              {!candidateDetail ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="w-8 h-8 border-2 border-[#2D8FF0] border-t-transparent rounded-full animate-spin" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1E293B]">
-                    {selectedCandidate.name}
-                  </h3>
-                  <p className="text-sm text-[#475569]">
-                    {selectedCandidate.position}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-[#94A3B8]">
-                    <Briefcase className="w-3 h-3" />
-                    {selectedCandidate.company}
-                    <MapPin className="w-3 h-3 ml-1" />
-                    {selectedCandidate.location}
+              ) : (
+                <>
+                  {/* Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-2xl font-bold">
+                      {candidateDetail.name?.charAt(0) || "?"}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#1E293B]">
+                        {candidateDetail.name}
+                      </h3>
+                      <p className="text-sm text-[#475569]">
+                        {candidateDetail.position}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-[#94A3B8]">
+                        <Briefcase className="w-3 h-3" />
+                        {candidateDetail.company}
+                        <MapPin className="w-3 h-3 ml-1" />
+                        {candidateDetail.location}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <div className="text-xs text-[#94A3B8]">AI匹配度</div>
-                  <div
-                    className="text-xl font-bold"
-                    style={{
-                      color: getMatchColor(selectedCandidate.matchScore),
-                    }}
-                  >
-                    {selectedCandidate.matchScore ?? "-"}%
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-slate-50 rounded-xl p-3">
+                      <div className="text-xs text-[#94A3B8]">AI匹配度</div>
+                      <div
+                        className="text-xl font-bold"
+                        style={{
+                          color:
+                            (candidateDetail.matchScore ?? 0) >= 75
+                              ? "#06D6A0"
+                              : (candidateDetail.matchScore ?? 0) >= 60
+                                ? "#2D8FF0"
+                                : "#F59E0B",
+                        }}
+                      >
+                        {candidateDetail.matchScore ?? "-"}%
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3">
+                      <div className="text-xs text-[#94A3B8]">求职意向</div>
+                      <div
+                        className="text-xl font-bold"
+                        style={{
+                          color:
+                            (candidateDetail.intentScore ?? 0) >= 85
+                              ? "#06D6A0"
+                              : "#2D8FF0",
+                        }}
+                      >
+                        {candidateDetail.intentScore ?? "-"}%
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3">
+                      <div className="text-xs text-[#94A3B8]">期望薪资</div>
+                      <div className="text-lg font-bold text-[#1E293B]">
+                        {candidateDetail.salary || "面议"}
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3">
+                      <div className="text-xs text-[#94A3B8]">当前阶段</div>
+                      <div className="text-sm font-medium text-[#1E293B]">
+                        {candidateDetail.stage || candidateDetail.status}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <div className="text-xs text-[#94A3B8]">求职意向</div>
-                  <div
-                    className="text-xl font-bold"
-                    style={{
-                      color:
-                        selectedCandidate.intentScore &&
-                        selectedCandidate.intentScore >= 85
-                          ? "#06D6A0"
-                          : "#2D8FF0",
-                    }}
-                  >
-                    {selectedCandidate.intentScore ?? "-"}%
-                  </div>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <div className="text-xs text-[#94A3B8]">期望薪资</div>
-                  <div className="text-lg font-bold text-[#1E293B]">
-                    {selectedCandidate.salary || "面议"}
-                  </div>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <div className="text-xs text-[#94A3B8]">当前状态</div>
-                  <div className="text-sm font-medium text-[#1E293B]">
-                    {selectedCandidate.status}
-                  </div>
-                </div>
-              </div>
 
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-[#2D8FF0]" />
-                  教育背景
-                </h4>
-                <p className="text-sm text-[#475569]">
-                  {selectedCandidate.education || "未提供"}
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-[#1E293B] mb-2">
-                  技能标签
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCandidate.skills.map(s => (
-                    <span
-                      key={s}
-                      className="px-3 py-1.5 bg-[#2D8FF0]/8 text-[#2D8FF0] rounded-lg text-xs font-medium"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-[#1E293B] mb-2">
-                  联系方式
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-[#475569]">
-                    <span className="text-[#94A3B8]">电话:</span>{" "}
-                    {selectedCandidate.phone || "-"}
+                  {/* Linked Records Summary */}
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    <div className="bg-[#2D8FF0]/5 border border-[#2D8FF0]/10 rounded-xl p-3 text-center">
+                      <div className="text-xl font-bold text-[#2D8FF0]">
+                        {(candidateDetail as any).interviews?.length ?? 0}
+                      </div>
+                      <div className="text-xs text-[#94A3B8]">面试</div>
+                    </div>
+                    <div className="bg-[#06D6A0]/5 border border-[#06D6A0]/10 rounded-xl p-3 text-center">
+                      <div className="text-xl font-bold text-[#06D6A0]">
+                        {(candidateDetail as any).offers?.length ?? 0}
+                      </div>
+                      <div className="text-xs text-[#94A3B8]">Offer</div>
+                    </div>
+                    <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/10 rounded-xl p-3 text-center">
+                      <div className="text-xl font-bold text-[#F59E0B]">
+                        {(candidateDetail as any).alerts?.length ?? 0}
+                      </div>
+                      <div className="text-xs text-[#94A3B8]">预警</div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[#475569]">
-                    <span className="text-[#94A3B8]">邮箱:</span>{" "}
-                    {selectedCandidate.email || "-"}
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex gap-3">
-                <button className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors">
-                  安排面试
-                </button>
-                <button className="flex-1 h-10 border border-slate-200 text-[#475569] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
-                  发送消息
-                </button>
-              </div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-[#2D8FF0]" />
+                      教育背景
+                    </h4>
+                    <p className="text-sm text-[#475569]">
+                      {candidateDetail.education || "未提供"}
+                    </p>
+                  </div>
+
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-[#1E293B] mb-2">
+                      技能标签
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(Array.isArray(candidateDetail.skills)
+                        ? candidateDetail.skills
+                        : []
+                      ).map((s: string) => (
+                        <span
+                          key={s}
+                          className="px-3 py-1.5 bg-[#2D8FF0]/8 text-[#2D8FF0] rounded-lg text-xs font-medium"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Status Timeline */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-[#1E293B] mb-3 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-[#2D8FF0]" />
+                      状态流转
+                    </h4>
+                    <div className="relative pl-5 border-l-2 border-slate-200 space-y-4">
+                      {((candidateDetail as any).timeline ?? []).map(
+                        (event: any, i: number) => {
+                          const TIcon = timelineIcons[event.type] || Clock;
+                          return (
+                            <div key={i} className="relative">
+                              <div className="absolute -left-[25px] w-3 h-3 rounded-full border-2 border-white bg-[#2D8FF0] top-1" />
+                              <div>
+                                <p className="text-sm font-medium text-[#1E293B]">
+                                  {event.title}
+                                </p>
+                                <p className="text-xs text-[#94A3B8] mt-0.5">
+                                  {new Date(event.date).toLocaleDateString(
+                                    "zh-CN",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
+                                  {" · "}
+                                  {event.description}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Linked Interviews */}
+                  {((candidateDetail as any).interviews ?? []).length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-[#2D8FF0]" />
+                        关联面试 ({(candidateDetail as any).interviews.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {(candidateDetail as any).interviews.map((iv: any) => (
+                          <div
+                            key={iv.id}
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-[#1E293B]">
+                                {iv.stage} · {iv.type}
+                              </p>
+                              <p className="text-xs text-[#94A3B8]">
+                                {iv.interviewer} ·{" "}
+                                {iv.scheduledTime
+                                  ? new Date(
+                                      iv.scheduledTime
+                                    ).toLocaleDateString("zh-CN")
+                                  : "待定"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              {iv.totalScore && (
+                                <span className="text-sm font-semibold text-[#2D8FF0]">
+                                  {iv.totalScore}分
+                                </span>
+                              )}
+                              <span
+                                className={`block text-xs px-2 py-0.5 rounded ${
+                                  iv.status === "completed"
+                                    ? "bg-[#06D6A0]/10 text-[#06D6A0]"
+                                    : iv.status === "pending"
+                                      ? "bg-[#F59E0B]/10 text-[#F59E0B]"
+                                      : "bg-slate-100 text-[#94A3B8]"
+                                }`}
+                              >
+                                {iv.status === "completed"
+                                  ? "已完成"
+                                  : iv.status === "pending"
+                                    ? "待面试"
+                                    : iv.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Linked Offers */}
+                  {((candidateDetail as any).offers ?? []).length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                        <Star className="w-4 h-4 text-[#06D6A0]" />
+                        关联Offer ({(candidateDetail as any).offers.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {(candidateDetail as any).offers.map((o: any) => (
+                          <div
+                            key={o.id}
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-[#1E293B]">
+                                总包{" "}
+                                {o.totalPackage
+                                  ? (o.totalPackage / 10000).toFixed(1) + "万"
+                                  : "待定"}
+                              </p>
+                              <p className="text-xs text-[#94A3B8]">
+                                {o.recruiter || ""}
+                              </p>
+                            </div>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded ${
+                                o.status === "accepted"
+                                  ? "bg-[#06D6A0]/10 text-[#06D6A0]"
+                                  : o.status === "sent" ||
+                                      o.status === "negotiating"
+                                    ? "bg-[#2D8FF0]/10 text-[#2D8FF0]"
+                                    : "bg-slate-100 text-[#94A3B8]"
+                              }`}
+                            >
+                              {o.status === "accepted"
+                                ? "已接受"
+                                : o.status === "sent"
+                                  ? "已发送"
+                                  : o.status === "negotiating"
+                                    ? "谈判中"
+                                    : o.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Linked Alerts */}
+                  {((candidateDetail as any).alerts ?? []).length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                        <Bell className="w-4 h-4 text-[#FF5A65]" />
+                        关联预警 ({(candidateDetail as any).alerts.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {(candidateDetail as any).alerts.map((a: any) => (
+                          <div
+                            key={a.id}
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-[#1E293B]">
+                                {a.title}
+                              </p>
+                              <p className="text-xs text-[#94A3B8]">
+                                {a.description}
+                              </p>
+                            </div>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded ${
+                                a.type === "risk"
+                                  ? "bg-[#FF5A65]/10 text-[#FF5A65]"
+                                  : a.type === "warning"
+                                    ? "bg-[#F59E0B]/10 text-[#F59E0B]"
+                                    : "bg-[#2D8FF0]/10 text-[#2D8FF0]"
+                              }`}
+                            >
+                              {a.type === "risk"
+                                ? "高风险"
+                                : a.type === "warning"
+                                  ? "警告"
+                                  : "提醒"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contact */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-[#1E293B] mb-2">
+                      联系方式
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-[#475569]">
+                        <span className="text-[#94A3B8]">电话:</span>{" "}
+                        {candidateDetail.phone || "-"}
+                      </div>
+                      <div className="flex items-center gap-2 text-[#475569]">
+                        <span className="text-[#94A3B8]">邮箱:</span>{" "}
+                        {candidateDetail.email || "-"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors">
+                      安排面试
+                    </button>
+                    <button className="flex-1 h-10 border border-slate-200 text-[#475569] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
+                      发送消息
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

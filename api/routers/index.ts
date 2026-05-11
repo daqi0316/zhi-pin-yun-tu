@@ -11,6 +11,7 @@ import {
   positions,
 } from "../../db/schema";
 import { eq, desc, sql, like, or, and } from "drizzle-orm";
+import { calculateResumeScore, type ScoringInput } from "../scoring";
 
 // ─── Candidates ───
 export const candidateRouter = createRouter({
@@ -175,6 +176,102 @@ export const candidateRouter = createRouter({
     await db.delete(candidates).where(eq(candidates.id, input));
     return { success: true };
   }),
+
+  detail: authedQuery.input(z.number()).query(async ({ input }) => {
+    const db = getDb();
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, input))
+      .limit(1);
+    if (!candidate) throw new Error("Candidate not found");
+
+    const workHistory = await db
+      .select()
+      .from(workHistories)
+      .where(eq(workHistories.candidateId, input));
+
+    const candidateInterviews = await db
+      .select()
+      .from(interviews)
+      .where(eq(interviews.candidateId, input))
+      .orderBy(desc(interviews.scheduledTime));
+
+    const candidateOffers = await db
+      .select()
+      .from(offers)
+      .where(eq(offers.candidateId, input))
+      .orderBy(desc(offers.createdAt));
+
+    const candidateAlerts = await db
+      .select()
+      .from(alerts)
+      .where(eq(alerts.candidateId, input))
+      .orderBy(desc(alerts.createdAt));
+
+    // Build timeline
+    const timeline: Array<{
+      date: string;
+      type: "candidate" | "interview" | "offer" | "alert" | "stage";
+      title: string;
+      description: string;
+    }> = [];
+
+    timeline.push({
+      date: candidate.createdAt,
+      type: "candidate",
+      title: "候选人入库",
+      description: `${candidate.name} 通过 ${candidate.source || "未知渠道"} 进入人才库`,
+    });
+
+    for (const iv of candidateInterviews) {
+      timeline.push({
+        date: iv.createdAt,
+        type: "interview",
+        title: iv.status === "completed" ? "面试完成" : "安排面试",
+        description: `${iv.stage || ""} · ${iv.interviewer || ""} (${iv.type || ""})${iv.totalScore ? ` · 得分${iv.totalScore}` : ""}`,
+      });
+    }
+
+    for (const o of candidateOffers) {
+      timeline.push({
+        date: o.createdAt,
+        type: "offer",
+        title:
+          o.status === "accepted"
+            ? "Offer已接受"
+            : o.status === "sent"
+              ? "Offer已发送"
+              : o.status === "negotiating"
+                ? "Offer谈判中"
+                : "Offer草稿",
+        description: `总包 ${o.totalPackage ? (o.totalPackage / 10000).toFixed(1) + "万" : "待定"}${o.recruiter ? ` · ${o.recruiter}` : ""}`,
+      });
+    }
+
+    for (const a of candidateAlerts) {
+      timeline.push({
+        date: a.createdAt,
+        type: "alert",
+        title: a.title,
+        description: a.description || "",
+      });
+    }
+
+    timeline.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    return {
+      ...candidate,
+      skills: JSON.parse(candidate.skills || "[]"),
+      workHistory,
+      interviews: candidateInterviews,
+      offers: candidateOffers,
+      alerts: candidateAlerts,
+      timeline,
+    };
+  }),
 });
 
 // ─── Interviews ───
@@ -248,6 +345,59 @@ export const interviewRouter = createRouter({
         .from(interviews)
         .where(eq(interviews.id, input.id))
         .limit(1);
+
+      if (updated && updated.positionId && updated.candidateId) {
+        try {
+          const [candidate] = await db
+            .select()
+            .from(candidates)
+            .where(eq(candidates.id, updated.candidateId))
+            .limit(1);
+          const [position] = await db
+            .select()
+            .from(positions)
+            .where(eq(positions.id, updated.positionId))
+            .limit(1);
+
+          if (candidate && position) {
+            const workHistory = await db
+              .select()
+              .from(workHistories)
+              .where(eq(workHistories.candidateId, candidate.id));
+
+            const scoringInput: ScoringInput = {
+              candidateSkills: JSON.parse(candidate.skills || "[]"),
+              candidateExperience: candidate.experience ?? 0,
+              candidateEducation: candidate.education ?? "",
+              candidateSalaryExpectation:
+                candidate.salaryExpectation ?? undefined,
+              workHistory: workHistory.map(w => ({
+                company: w.company,
+                position: w.position ?? undefined,
+                startDate: w.startDate ?? undefined,
+                endDate: w.endDate ?? undefined,
+              })),
+              positionRequiredSkills: JSON.parse(
+                position.requiredSkills || "[]"
+              ),
+              positionBonusSkills: JSON.parse(position.bonusSkills || "[]"),
+              positionMinExperience: position.minExperience ?? 0,
+              positionMaxExperience: position.maxExperience ?? 10,
+              positionSalaryMin: position.salaryMin ?? undefined,
+              positionSalaryMax: position.salaryMax ?? undefined,
+            };
+
+            const result = calculateResumeScore(scoringInput);
+            await db
+              .update(candidates)
+              .set({ matchScore: result.total })
+              .where(eq(candidates.id, candidate.id));
+          }
+        } catch {
+          // silently ignore rescore errors
+        }
+      }
+
       return updated;
     }),
 
@@ -826,5 +976,25 @@ export const positionRouter = createRouter({
     const db = getDb();
     await db.delete(positions).where(eq(positions.id, input));
     return { success: true };
+  }),
+
+  stats: authedQuery.input(z.number()).query(async ({ input }) => {
+    const db = getDb();
+    const posInterviews = await db
+      .select()
+      .from(interviews)
+      .where(eq(interviews.positionId, input));
+    const posOffers = await db
+      .select()
+      .from(offers)
+      .where(eq(offers.positionId, input));
+
+    return {
+      interviewCount: posInterviews.length,
+      completedInterviews: posInterviews.filter(iv => iv.status === "completed")
+        .length,
+      offerCount: posOffers.length,
+      acceptedOffers: posOffers.filter(o => o.status === "accepted").length,
+    };
   }),
 });
