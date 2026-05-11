@@ -1,20 +1,32 @@
 import { z } from "zod";
-import { createRouter, authedQuery } from "../middleware";
+import { createRouter, authedQuery, adminQuery } from "../middleware";
 import { getDb } from "../../db/connection";
-import { candidates, interviews, offers, channels, alerts, workHistories, positions } from "../../db/schema";
+import {
+  candidates,
+  interviews,
+  offers,
+  channels,
+  alerts,
+  workHistories,
+  positions,
+} from "../../db/schema";
 import { eq, desc, sql, like, or, and } from "drizzle-orm";
 
 // ─── Candidates ───
 export const candidateRouter = createRouter({
   list: authedQuery
-    .input(z.object({
-      search: z.string().optional(),
-      stage: z.string().optional(),
-      source: z.string().optional(),
-      status: z.string().optional(),
-      page: z.number().default(1),
-      pageSize: z.number().default(50),
-    }).optional())
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          stage: z.string().optional(),
+          source: z.string().optional(),
+          status: z.string().optional(),
+          page: z.number().default(1),
+          pageSize: z.number().default(50),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = getDb();
       const conditions = [];
@@ -24,7 +36,7 @@ export const candidateRouter = createRouter({
             like(candidates.name, `%${input.search}%`),
             like(candidates.position, `%${input.search}%`),
             like(candidates.company, `%${input.search}%`),
-            like(candidates.skills, `%${input.search}%`),
+            like(candidates.skills, `%${input.search}%`)
           )
         );
       }
@@ -39,67 +51,54 @@ export const candidateRouter = createRouter({
       }
 
       const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const result = await db.select().from(candidates).where(where)
+      const result = await db
+        .select()
+        .from(candidates)
+        .where(where)
         .orderBy(desc(candidates.matchScore))
         .limit(input?.pageSize ?? 50)
         .offset(((input?.page ?? 1) - 1) * (input?.pageSize ?? 50));
 
-      const totalResult = await db.select({ count: sql<number>`cast(count(*) as unsigned)` }).from(candidates).where(where);
+      const totalResult = await db
+        .select({ count: sql<number>`cast(count(*) as unsigned)` })
+        .from(candidates)
+        .where(where);
       const total = totalResult[0]?.count ?? 0;
 
       return {
-        items: result.map(c => ({ ...c, skills: JSON.parse(c.skills || "[]") })),
+        items: result.map(c => ({
+          ...c,
+          skills: JSON.parse(c.skills || "[]"),
+        })),
         total,
         page: input?.page ?? 1,
         pageSize: input?.pageSize ?? 50,
       };
     }),
 
-  getById: authedQuery
-    .input(z.number())
-    .query(async ({ input }) => {
-      const db = getDb();
-      const candidate = await db.select().from(candidates).where(eq(candidates.id, input)).limit(1);
-      if (!candidate[0]) throw new Error("Candidate not found");
-      const workHistory = await db.select().from(workHistories).where(eq(workHistories.candidateId, input));
-      return {
-        ...candidate[0],
-        skills: JSON.parse(candidate[0].skills || "[]"),
-        workHistory,
-      };
-    }),
+  getById: authedQuery.input(z.number()).query(async ({ input }) => {
+    const db = getDb();
+    const candidate = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, input))
+      .limit(1);
+    if (!candidate[0]) throw new Error("Candidate not found");
+    const workHistory = await db
+      .select()
+      .from(workHistories)
+      .where(eq(workHistories.candidateId, input));
+    return {
+      ...candidate[0],
+      skills: JSON.parse(candidate[0].skills || "[]"),
+      workHistory,
+    };
+  }),
 
   create: authedQuery
-    .input(z.object({
-      name: z.string(),
-      phone: z.string().optional(),
-      email: z.string().optional(),
-      position: z.string().optional(),
-      company: z.string().optional(),
-      experience: z.number().optional(),
-      education: z.string().optional(),
-      skills: z.array(z.string()).optional(),
-      source: z.string().optional(),
-      salary: z.string().optional(),
-      stage: z.string().optional(),
-      location: z.string().optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const db = getDb();
-      await db.insert(candidates).values({
-        ...input,
-        skills: JSON.stringify(input.skills || []),
-        status: "在职-考虑机会",
-      });
-      const [created] = await db.select().from(candidates).orderBy(desc(candidates.id)).limit(1);
-      return created;
-    }),
-
-  update: authedQuery
-    .input(z.object({
-      id: z.number(),
-      data: z.object({
-        name: z.string().optional(),
+    .input(
+      z.object({
+        name: z.string(),
         phone: z.string().optional(),
         email: z.string().optional(),
         position: z.string().optional(),
@@ -107,16 +106,51 @@ export const candidateRouter = createRouter({
         experience: z.number().optional(),
         education: z.string().optional(),
         skills: z.array(z.string()).optional(),
-        status: z.string().optional(),
         source: z.string().optional(),
         salary: z.string().optional(),
-        matchScore: z.number().optional(),
-        intentScore: z.number().optional(),
         stage: z.string().optional(),
         location: z.string().optional(),
-        notes: z.string().optional(),
-      }),
-    }))
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db.insert(candidates).values({
+        ...input,
+        skills: JSON.stringify(input.skills || []),
+        status: "在职-考虑机会",
+      });
+      const [created] = await db
+        .select()
+        .from(candidates)
+        .orderBy(desc(candidates.id))
+        .limit(1);
+      return created;
+    }),
+
+  update: authedQuery
+    .input(
+      z.object({
+        id: z.number(),
+        data: z.object({
+          name: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().optional(),
+          position: z.string().optional(),
+          company: z.string().optional(),
+          experience: z.number().optional(),
+          education: z.string().optional(),
+          skills: z.array(z.string()).optional(),
+          status: z.string().optional(),
+          source: z.string().optional(),
+          salary: z.string().optional(),
+          matchScore: z.number().optional(),
+          intentScore: z.number().optional(),
+          stage: z.string().optional(),
+          location: z.string().optional(),
+          notes: z.string().optional(),
+        }),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = getDb();
       const updateData: Record<string, unknown> = { ...input.data };
@@ -124,54 +158,69 @@ export const candidateRouter = createRouter({
         updateData.skills = JSON.stringify(updateData.skills);
       }
       updateData.updatedAt = sql`CURRENT_TIMESTAMP()`;
-      await db.update(candidates)
+      await db
+        .update(candidates)
         .set(updateData)
         .where(eq(candidates.id, input.id));
-      const [updated] = await db.select().from(candidates).where(eq(candidates.id, input.id)).limit(1);
+      const [updated] = await db
+        .select()
+        .from(candidates)
+        .where(eq(candidates.id, input.id))
+        .limit(1);
       return updated;
     }),
 
-  delete: authedQuery
-    .input(z.number())
-    .mutation(async ({ input }) => {
-      const db = getDb();
-      await db.delete(candidates).where(eq(candidates.id, input));
-      return { success: true };
-    }),
+  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    await db.delete(candidates).where(eq(candidates.id, input));
+    return { success: true };
+  }),
 });
 
 // ─── Interviews ───
 export const interviewRouter = createRouter({
   list: authedQuery.query(async () => {
     const db = getDb();
-    const result = await db.select().from(interviews).orderBy(desc(interviews.scheduledTime));
+    const result = await db
+      .select()
+      .from(interviews)
+      .orderBy(desc(interviews.scheduledTime));
     return result;
   }),
 
-  getByCandidateId: authedQuery
-    .input(z.number())
-    .query(async ({ input }) => {
-      const db = getDb();
-      return await db.select().from(interviews).where(eq(interviews.candidateId, input));
-    }),
+  getByCandidateId: authedQuery.input(z.number()).query(async ({ input }) => {
+    const db = getDb();
+    return await db
+      .select()
+      .from(interviews)
+      .where(eq(interviews.candidateId, input));
+  }),
 
   updateScore: authedQuery
-    .input(z.object({
-      id: z.number(),
-      scoreSkill: z.number().min(1).max(5).optional(),
-      scoreProblem: z.number().min(1).max(5).optional(),
-      scoreCommunication: z.number().min(1).max(5).optional(),
-      scoreTeamwork: z.number().min(1).max(5).optional(),
-      scoreCulture: z.number().min(1).max(5).optional(),
-      feedback: z.string().optional(),
-      status: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        scoreSkill: z.number().min(1).max(5).optional(),
+        scoreProblem: z.number().min(1).max(5).optional(),
+        scoreCommunication: z.number().min(1).max(5).optional(),
+        scoreTeamwork: z.number().min(1).max(5).optional(),
+        scoreCulture: z.number().min(1).max(5).optional(),
+        feedback: z.string().optional(),
+        status: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = getDb();
       const updateData: Record<string, unknown> = { ...input };
       delete (updateData as any).id;
 
-      if (input.scoreSkill || input.scoreProblem || input.scoreCommunication || input.scoreTeamwork || input.scoreCulture) {
+      if (
+        input.scoreSkill ||
+        input.scoreProblem ||
+        input.scoreCommunication ||
+        input.scoreTeamwork ||
+        input.scoreCulture
+      ) {
         const s = {
           skill: input.scoreSkill ?? 0,
           problem: input.scoreProblem ?? 0,
@@ -179,16 +228,64 @@ export const interviewRouter = createRouter({
           team: input.scoreTeamwork ?? 0,
           culture: input.scoreCulture ?? 0,
         };
-        const total = (s.skill * 0.30 + s.problem * 0.20 + s.comm * 0.20 + s.team * 0.15 + s.culture * 0.15) / 5 * 100;
+        const total =
+          ((s.skill * 0.3 +
+            s.problem * 0.2 +
+            s.comm * 0.2 +
+            s.team * 0.15 +
+            s.culture * 0.15) /
+            5) *
+          100;
         updateData.totalScore = Math.round(total * 10) / 10;
       }
 
-      await db.update(interviews)
+      await db
+        .update(interviews)
         .set(updateData)
         .where(eq(interviews.id, input.id));
-      const [updated] = await db.select().from(interviews).where(eq(interviews.id, input.id)).limit(1);
+      const [updated] = await db
+        .select()
+        .from(interviews)
+        .where(eq(interviews.id, input.id))
+        .limit(1);
       return updated;
     }),
+
+  create: authedQuery
+    .input(
+      z.object({
+        candidateId: z.number(),
+        positionId: z.number().optional(),
+        stage: z.string().optional(),
+        interviewer: z.string().optional(),
+        scheduledTime: z.string().optional(),
+        type: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db.insert(interviews).values({
+        candidateId: input.candidateId,
+        positionId: input.positionId,
+        stage: input.stage ?? "初筛",
+        interviewer: input.interviewer ?? "面试官",
+        scheduledTime: input.scheduledTime ?? new Date().toISOString(),
+        type: input.type ?? "视频",
+        status: "pending",
+      });
+      const [created] = await db
+        .select()
+        .from(interviews)
+        .orderBy(desc(interviews.id))
+        .limit(1);
+      return created;
+    }),
+
+  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    await db.delete(interviews).where(eq(interviews.id, input));
+    return { success: true };
+  }),
 });
 
 // ─── Offers ───
@@ -199,29 +296,82 @@ export const offerRouter = createRouter({
   }),
 
   update: authedQuery
-    .input(z.object({
-      id: z.number(),
-      data: z.object({
+    .input(
+      z.object({
+        id: z.number(),
+        data: z.object({
+          baseSalary: z.number().optional(),
+          bonus: z.number().optional(),
+          stock: z.number().optional(),
+          status: z.string().optional(),
+          acceptanceProbability: z.number().optional(),
+          notes: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const updateData: Record<string, unknown> = {
+        ...input.data,
+        updatedAt: sql`CURRENT_TIMESTAMP()`,
+      };
+      if (input.data.baseSalary && input.data.bonus) {
+        updateData.totalPackage =
+          input.data.baseSalary * (12 + input.data.bonus) +
+          (input.data.stock || 0) / 4;
+      }
+      await db.update(offers).set(updateData).where(eq(offers.id, input.id));
+      const [updated] = await db
+        .select()
+        .from(offers)
+        .where(eq(offers.id, input.id))
+        .limit(1);
+      return updated;
+    }),
+
+  create: authedQuery
+    .input(
+      z.object({
+        candidateId: z.number(),
+        positionId: z.number().optional(),
         baseSalary: z.number().optional(),
         bonus: z.number().optional(),
         stock: z.number().optional(),
         status: z.string().optional(),
-        acceptanceProbability: z.number().optional(),
+        recruiter: z.string().optional(),
         notes: z.string().optional(),
-      }),
-    }))
+      })
+    )
     .mutation(async ({ input }) => {
       const db = getDb();
-      const updateData: Record<string, unknown> = { ...input.data, updatedAt: sql`CURRENT_TIMESTAMP()` };
-      if (input.data.baseSalary && input.data.bonus) {
-        updateData.totalPackage = input.data.baseSalary * (12 + input.data.bonus) + (input.data.stock || 0) / 4;
-      }
-      await db.update(offers)
-        .set(updateData)
-        .where(eq(offers.id, input.id));
-      const [updated] = await db.select().from(offers).where(eq(offers.id, input.id)).limit(1);
-      return updated;
+      const base = input.baseSalary ?? 0;
+      const bon = input.bonus ?? 0;
+      const stk = input.stock ?? 0;
+      const totalPackage = base * (12 + bon) + stk / 4;
+      await db.insert(offers).values({
+        candidateId: input.candidateId,
+        positionId: input.positionId,
+        baseSalary: base,
+        bonus: bon,
+        stock: stk,
+        totalPackage,
+        status: input.status ?? "draft",
+        recruiter: input.recruiter,
+        notes: input.notes,
+      });
+      const [created] = await db
+        .select()
+        .from(offers)
+        .orderBy(desc(offers.id))
+        .limit(1);
+      return created;
     }),
+
+  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    await db.delete(offers).where(eq(offers.id, input));
+    return { success: true };
+  }),
 });
 
 // ─── Channels ───
@@ -229,6 +379,67 @@ export const channelRouter = createRouter({
   list: authedQuery.query(async () => {
     const db = getDb();
     return await db.select().from(channels);
+  }),
+
+  create: adminQuery
+    .input(
+      z.object({
+        name: z.string().min(1),
+        type: z.string().optional(),
+        cost: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db.insert(channels).values({
+        name: input.name,
+        type: input.type ?? "线上招聘",
+        cost: input.cost ?? 0,
+        status: "active",
+      });
+      const [created] = await db
+        .select()
+        .from(channels)
+        .orderBy(desc(channels.id))
+        .limit(1);
+      return created;
+    }),
+
+  update: adminQuery
+    .input(
+      z.object({
+        id: z.number(),
+        data: z.object({
+          name: z.string().optional(),
+          type: z.string().optional(),
+          applications: z.number().optional(),
+          interviews: z.number().optional(),
+          offers: z.number().optional(),
+          conversionRate: z.number().optional(),
+          cost: z.number().optional(),
+          roi: z.number().optional(),
+          status: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db
+        .update(channels)
+        .set(input.data as any)
+        .where(eq(channels.id, input.id));
+      const [updated] = await db
+        .select()
+        .from(channels)
+        .where(eq(channels.id, input.id))
+        .limit(1);
+      return updated;
+    }),
+
+  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    await db.delete(channels).where(eq(channels.id, input));
+    return { success: true };
   }),
 });
 
@@ -239,39 +450,243 @@ export const alertRouter = createRouter({
     return await db.select().from(alerts).orderBy(desc(alerts.createdAt));
   }),
 
-  markRead: authedQuery
-    .input(z.number())
+  markRead: authedQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    await db.update(alerts).set({ isRead: 1 }).where(eq(alerts.id, input));
+    return { success: true };
+  }),
+
+  markAllRead: authedQuery.mutation(async () => {
+    const db = getDb();
+    await db.update(alerts).set({ isRead: 1 }).where(eq(alerts.isRead, 0));
+    return { success: true };
+  }),
+
+  create: adminQuery
+    .input(
+      z.object({
+        type: z.enum(["risk", "warning", "info", "success"]),
+        title: z.string().min(1),
+        description: z.string().optional(),
+        candidateId: z.number().optional(),
+        action: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = getDb();
-      await db.update(alerts).set({ isRead: 1 }).where(eq(alerts.id, input));
-      return { success: true };
+      await db.insert(alerts).values({
+        type: input.type,
+        title: input.title,
+        description: input.description ?? null,
+        candidateId: input.candidateId ?? null,
+        action: input.action ?? null,
+        isRead: 0,
+      });
+      const [created] = await db
+        .select()
+        .from(alerts)
+        .orderBy(desc(alerts.id))
+        .limit(1);
+      return created;
     }),
+
+  update: adminQuery
+    .input(
+      z.object({
+        id: z.number(),
+        data: z.object({
+          type: z.enum(["risk", "warning", "info", "success"]).optional(),
+          title: z.string().optional(),
+          description: z.string().optional(),
+          candidateId: z.number().optional(),
+          action: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const updateData: Record<string, unknown> = { ...input.data };
+      if (input.data.candidateId === undefined) delete updateData.candidateId;
+      await db.update(alerts).set(updateData).where(eq(alerts.id, input.id));
+      const [updated] = await db
+        .select()
+        .from(alerts)
+        .where(eq(alerts.id, input.id))
+        .limit(1);
+      return updated;
+    }),
+
+  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    await db.delete(alerts).where(eq(alerts.id, input));
+    return { success: true };
+  }),
+
+  executeAction: authedQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    const [alert] = await db
+      .select()
+      .from(alerts)
+      .where(eq(alerts.id, input))
+      .limit(1);
+    if (!alert) throw new Error("预警不存在");
+
+    await db.update(alerts).set({ isRead: 1 }).where(eq(alerts.id, input));
+
+    if (alert.candidateId) {
+      const [candidate] = await db
+        .select()
+        .from(candidates)
+        .where(eq(candidates.id, alert.candidateId))
+        .limit(1);
+
+      if (candidate && alert.type === "risk") {
+        await db
+          .update(candidates)
+          .set({ status: "在职-考虑机会", updatedAt: sql`CURRENT_TIMESTAMP()` })
+          .where(eq(candidates.id, alert.candidateId));
+      }
+    }
+
+    return {
+      success: true,
+      alertId: input,
+      action: alert.action,
+      candidateId: alert.candidateId,
+      type: alert.type,
+    };
+  }),
 });
 
 // ─── Dashboard Stats ───
 export const dashboardRouter = createRouter({
   stats: authedQuery.query(async () => {
     const db = getDb();
-    const totalCandidates = (await db.select({ count: sql<number>`cast(count(*) as unsigned)` }).from(candidates))[0]?.count ?? 0;
-    const totalInterviews = (await db.select({ count: sql<number>`cast(count(*) as unsigned)` }).from(interviews))[0]?.count ?? 0;
-    const completedInterviews = (await db.select({ count: sql<number>`cast(count(*) as unsigned)` }).from(interviews).where(eq(interviews.status, "completed")))[0]?.count ?? 0;
-    const totalOffers = (await db.select({ count: sql<number>`cast(count(*) as unsigned)` }).from(offers))[0]?.count ?? 0;
-    const acceptedOffers = (await db.select({ count: sql<number>`cast(count(*) as unsigned)` }).from(offers).where(eq(offers.status, "accepted")))[0]?.count ?? 0;
+
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const allCandidates = await db.select().from(candidates);
+    const allInterviews = await db.select().from(interviews);
+    const allOffers = await db.select().from(offers);
+
+    const totalCandidates = allCandidates.length;
+    const totalInterviews = allInterviews.length;
+    const completedInterviews = allInterviews.filter(
+      iv => iv.status === "completed"
+    ).length;
+    const totalOffers = allOffers.length;
+    const acceptedOffers = allOffers.filter(
+      o => o.status === "accepted"
+    ).length;
+
+    const thisMonthCandidates = allCandidates.filter(c => {
+      const cd = new Date(c.createdAt);
+      return cd >= thisMonthStart;
+    }).length;
+
+    const lastMonthCandidates = allCandidates.filter(c => {
+      const cd = new Date(c.createdAt);
+      return cd >= lastMonthStart && cd < lastMonthEnd;
+    }).length;
+
+    const thisMonthOffers = allOffers.filter(o => {
+      const od = new Date(o.createdAt);
+      return od >= thisMonthStart;
+    }).length;
+
+    const thisMonthHires = allOffers.filter(o => {
+      const od = new Date(o.createdAt);
+      return od >= thisMonthStart && o.status === "accepted";
+    }).length;
+
+    const lastMonthHires = allOffers.filter(o => {
+      const od = new Date(o.createdAt);
+      return (
+        od >= lastMonthStart && od < lastMonthEnd && o.status === "accepted"
+      );
+    }).length;
+
+    // Average hire days: for accepted offers, find first interview -> offer accept time
+    let avgHireDays = 0;
+    const acceptedOffersList = allOffers.filter(o => o.status === "accepted");
+    if (acceptedOffersList.length > 0) {
+      let totalDays = 0;
+      let countDays = 0;
+      for (const offer of acceptedOffersList) {
+        const firstInterview = allInterviews
+          .filter(iv => iv.candidateId === offer.candidateId)
+          .sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          )[0];
+        if (firstInterview) {
+          const startDate = new Date(firstInterview.createdAt);
+          const endDate = new Date(offer.createdAt);
+          const days = Math.round(
+            (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)
+          );
+          if (days > 0 && days < 365) {
+            totalDays += days;
+            countDays++;
+          }
+        }
+      }
+      avgHireDays = countDays > 0 ? Math.round(totalDays / countDays) : 0;
+    }
+
+    const candidateChange =
+      lastMonthCandidates > 0
+        ? Math.round(
+            ((thisMonthCandidates - lastMonthCandidates) /
+              lastMonthCandidates) *
+              1000
+          ) / 10
+        : thisMonthCandidates > 0
+          ? 100
+          : 0;
+
+    const hireChange =
+      lastMonthHires > 0
+        ? Math.round(
+            ((thisMonthHires - lastMonthHires) / lastMonthHires) * 1000
+          ) / 10
+        : thisMonthHires > 0
+          ? 100
+          : 0;
+
+    const interviewPassRate =
+      totalInterviews > 0
+        ? Math.round((completedInterviews / totalInterviews) * 1000) / 10
+        : 0;
+
+    const offerAcceptRate =
+      totalOffers > 0
+        ? Math.round((acceptedOffers / totalOffers) * 1000) / 10
+        : 0;
 
     return {
       totalCandidates,
-      monthlyApplications: 342,
-      interviewPassRate: totalInterviews > 0 ? Math.round((completedInterviews / totalInterviews) * 1000) / 10 : 0,
-      offerAcceptRate: totalOffers > 0 ? Math.round((acceptedOffers / totalOffers) * 1000) / 10 : 0,
-      avgHireDays: 26,
-      monthlyHires: acceptedOffers,
+      monthlyApplications: thisMonthCandidates,
+      candidateChange,
+      interviewPassRate,
+      offerAcceptRate,
+      avgHireDays,
+      monthlyHires: thisMonthHires,
+      hireChange,
+      monthlyOffers: thisMonthOffers,
     };
   }),
 
   activities: authedQuery.query(async () => {
     const db = getDb();
-    const recentInterviews = await db.select().from(interviews)
-      .orderBy(desc(interviews.scheduledTime)).limit(10);
+    const recentInterviews = await db
+      .select()
+      .from(interviews)
+      .orderBy(desc(interviews.scheduledTime))
+      .limit(10);
     return recentInterviews.map(iv => ({
       id: `iv-${iv.id}`,
       user: iv.interviewer || "系统",
@@ -286,10 +701,14 @@ export const dashboardRouter = createRouter({
 // ─── Positions / JD ───
 export const positionRouter = createRouter({
   list: authedQuery
-    .input(z.object({
-      search: z.string().optional(),
-      status: z.string().optional(),
-    }).optional())
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          status: z.string().optional(),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = getDb();
       const conditions = [];
@@ -297,7 +716,7 @@ export const positionRouter = createRouter({
         conditions.push(
           or(
             like(positions.title, `%${input.search}%`),
-            like(positions.company, `%${input.search}%`),
+            like(positions.company, `%${input.search}%`)
           )
         );
       }
@@ -305,47 +724,33 @@ export const positionRouter = createRouter({
         conditions.push(eq(positions.status, input.status));
       }
       const where = conditions.length > 0 ? and(...conditions) : undefined;
-      return await db.select().from(positions).where(where).orderBy(desc(positions.createdAt));
+      return await db
+        .select()
+        .from(positions)
+        .where(where)
+        .orderBy(desc(positions.createdAt));
     }),
 
-  getById: authedQuery
-    .input(z.number())
-    .query(async ({ input }) => {
-      const db = getDb();
-      const result = await db.select().from(positions).where(eq(positions.id, input)).limit(1);
-      if (!result[0]) throw new Error("Position not found");
-      return { ...result[0], requiredSkills: JSON.parse(result[0].requiredSkills || "[]"), bonusSkills: JSON.parse(result[0].bonusSkills || "[]") };
-    }),
+  getById: authedQuery.input(z.number()).query(async ({ input }) => {
+    const db = getDb();
+    const result = await db
+      .select()
+      .from(positions)
+      .where(eq(positions.id, input))
+      .limit(1);
+    if (!result[0]) throw new Error("Position not found");
+    return {
+      ...result[0],
+      requiredSkills: JSON.parse(result[0].requiredSkills || "[]"),
+      bonusSkills: JSON.parse(result[0].bonusSkills || "[]"),
+    };
+  }),
 
-  create: authedQuery
-    .input(z.object({
-      title: z.string().min(1),
-      company: z.string().min(1),
-      department: z.string().optional(),
-      description: z.string().optional(),
-      requiredSkills: z.array(z.string()).optional(),
-      bonusSkills: z.array(z.string()).optional(),
-      minExperience: z.number().optional(),
-      maxExperience: z.number().optional(),
-      minEducation: z.string().optional(),
-      salaryMin: z.number().optional(),
-      salaryMax: z.number().optional(),
-      salaryRange: z.string().optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const db = getDb();
-      const data = { ...input, requiredSkills: JSON.stringify(input.requiredSkills || []), bonusSkills: JSON.stringify(input.bonusSkills || []) };
-      await db.insert(positions).values(data);
-      const [created] = await db.select().from(positions).orderBy(desc(positions.id)).limit(1);
-      return created;
-    }),
-
-  update: authedQuery
-    .input(z.object({
-      id: z.number(),
-      data: z.object({
-        title: z.string().optional(),
-        company: z.string().optional(),
+  create: adminQuery
+    .input(
+      z.object({
+        title: z.string().min(1),
+        company: z.string().min(1),
         department: z.string().optional(),
         description: z.string().optional(),
         requiredSkills: z.array(z.string()).optional(),
@@ -356,24 +761,70 @@ export const positionRouter = createRouter({
         salaryMin: z.number().optional(),
         salaryMax: z.number().optional(),
         salaryRange: z.string().optional(),
-        status: z.string().optional(),
-      }),
-    }))
+      })
+    )
     .mutation(async ({ input }) => {
       const db = getDb();
-      const updateData: Record<string, unknown> = { ...input.data, updatedAt: sql`CURRENT_TIMESTAMP()` };
-      if (updateData.requiredSkills) updateData.requiredSkills = JSON.stringify(updateData.requiredSkills);
-      if (updateData.bonusSkills) updateData.bonusSkills = JSON.stringify(updateData.bonusSkills);
-      await db.update(positions).set(updateData).where(eq(positions.id, input.id));
-      const [updated] = await db.select().from(positions).where(eq(positions.id, input.id)).limit(1);
+      const data = {
+        ...input,
+        requiredSkills: JSON.stringify(input.requiredSkills || []),
+        bonusSkills: JSON.stringify(input.bonusSkills || []),
+      };
+      await db.insert(positions).values(data);
+      const [created] = await db
+        .select()
+        .from(positions)
+        .orderBy(desc(positions.id))
+        .limit(1);
+      return created;
+    }),
+
+  update: adminQuery
+    .input(
+      z.object({
+        id: z.number(),
+        data: z.object({
+          title: z.string().optional(),
+          company: z.string().optional(),
+          department: z.string().optional(),
+          description: z.string().optional(),
+          requiredSkills: z.array(z.string()).optional(),
+          bonusSkills: z.array(z.string()).optional(),
+          minExperience: z.number().optional(),
+          maxExperience: z.number().optional(),
+          minEducation: z.string().optional(),
+          salaryMin: z.number().optional(),
+          salaryMax: z.number().optional(),
+          salaryRange: z.string().optional(),
+          status: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const updateData: Record<string, unknown> = {
+        ...input.data,
+        updatedAt: sql`CURRENT_TIMESTAMP()`,
+      };
+      if (updateData.requiredSkills)
+        updateData.requiredSkills = JSON.stringify(updateData.requiredSkills);
+      if (updateData.bonusSkills)
+        updateData.bonusSkills = JSON.stringify(updateData.bonusSkills);
+      await db
+        .update(positions)
+        .set(updateData)
+        .where(eq(positions.id, input.id));
+      const [updated] = await db
+        .select()
+        .from(positions)
+        .where(eq(positions.id, input.id))
+        .limit(1);
       return updated;
     }),
 
-  delete: authedQuery
-    .input(z.number())
-    .mutation(async ({ input }) => {
-      const db = getDb();
-      await db.delete(positions).where(eq(positions.id, input));
-      return { success: true };
-    }),
+  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+    const db = getDb();
+    await db.delete(positions).where(eq(positions.id, input));
+    return { success: true };
+  }),
 });

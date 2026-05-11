@@ -1,39 +1,39 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router'
-import { Sparkles, ShieldCheck } from 'lucide-react'
-import { trpc } from '@/providers/trpc'
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { Sparkles, ShieldCheck } from "lucide-react";
+import { trpc } from "@/providers/trpc";
 
 export default function Login() {
-  const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
-      window.location.href = '/'
+      window.location.href = "/";
     },
-    onError: (err) => {
-      setError(err.message || '登录失败，请检查用户名和密码')
-      setLoading(false)
+    onError: err => {
+      setError(err.message || "登录失败，请检查用户名和密码");
+      setLoading(false);
     },
-  })
+  });
 
   // 如果已登录直接跳转
-  const { data: me } = trpc.auth.me.useQuery()
+  const { data: me } = trpc.auth.me.useQuery();
   useEffect(() => {
     if (me) {
-      navigate('/', { replace: true })
+      navigate("/", { replace: true });
     }
-  }, [me, navigate])
+  }, [me, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    loginMutation.mutate({ username, password })
-  }
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    loginMutation.mutate({ username, password });
+  };
 
   return (
     <div className="min-h-screen bg-[#F4F6FA] flex items-center justify-center p-4">
@@ -44,7 +44,9 @@ export default function Login() {
             <Sparkles className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-[#1E293B]">智聘云图</h1>
-          <p className="text-sm text-[#94A3B8] mt-1">AI 驱动的人才招聘管理平台</p>
+          <p className="text-sm text-[#94A3B8] mt-1">
+            AI 驱动的人才招聘管理平台
+          </p>
         </div>
 
         {/* Login Card */}
@@ -57,7 +59,7 @@ export default function Login() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={e => setUsername(e.target.value)}
                 placeholder="请输入用户名"
                 className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20 focus:border-[#2D8FF0]/40 transition-all"
                 required
@@ -71,7 +73,7 @@ export default function Login() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 placeholder="请输入密码"
                 className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20 focus:border-[#2D8FF0]/40 transition-all"
                 required
@@ -96,18 +98,19 @@ export default function Login() {
                   登录中...
                 </>
               ) : (
-                '登录'
+                "登录"
               )}
             </button>
           </form>
 
           <div className="mt-6 pt-4 border-t border-slate-100">
             <p className="text-xs text-center text-[#94A3B8]">
-              演示账户: <span className="font-mono text-[#475569]">admin</span> / <span className="font-mono text-[#475569]">admin123</span>
+              演示账户: <span className="font-mono text-[#475569]">admin</span>{" "}
+              / <span className="font-mono text-[#475569]">admin123</span>
             </p>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

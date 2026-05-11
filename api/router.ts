@@ -12,7 +12,12 @@ import {
   dashboardRouter,
   positionRouter,
 } from "./routers";
-import { scoringRouter, relationRouter } from "./routers/scoring";
+import {
+  scoringRouter,
+  relationRouter,
+  positionMatchRouter,
+} from "./routers/scoring";
+import { analyticsRouter } from "./routers/analytics";
 import { loginLocal } from "./auth-local";
 
 export const appRouter = createRouter({
@@ -20,12 +25,19 @@ export const appRouter = createRouter({
 
   auth: createRouter({
     login: publicQuery
-      .input(z.object({
-        username: z.string().min(1),
-        password: z.string().min(1),
-      }))
+      .input(
+        z.object({
+          username: z.string().min(1),
+          password: z.string().min(1),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
-        const user = await loginLocal(input.username, input.password, ctx.req.headers, ctx.resHeaders);
+        const user = await loginLocal(
+          input.username,
+          input.password,
+          ctx.req.headers,
+          ctx.resHeaders
+        );
         return { user };
       }),
 
@@ -40,10 +52,10 @@ export const appRouter = createRouter({
         cookie.serialize(Session.cookieName, "", {
           httpOnly: opts.httpOnly,
           path: opts.path,
-          sameSite: opts.sameSite?.toLowerCase() as "lax" | "none" || "lax",
+          sameSite: (opts.sameSite?.toLowerCase() as "lax" | "none") || "lax",
           secure: opts.secure,
           maxAge: 0,
-        }),
+        })
       );
       return { success: true };
     }),
@@ -58,6 +70,8 @@ export const appRouter = createRouter({
   position: positionRouter,
   scoring: scoringRouter,
   relation: relationRouter,
+  positionMatch: positionMatchRouter,
+  analytics: analyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;

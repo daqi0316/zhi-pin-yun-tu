@@ -41,7 +41,8 @@ export async function upsertUser(data: {
   if (data.unionId) {
     const existing = await findUserByUnionId(data.unionId);
     if (existing) {
-      await db.update(schema.users)
+      await db
+        .update(schema.users)
         .set({
           name: data.name ?? existing.name,
           role: data.role ?? existing.role,
@@ -58,6 +59,10 @@ export async function upsertUser(data: {
     name: data.name,
     role: data.role,
   });
-  const [created] = await db.select().from(schema.users).orderBy(schema.users.id).limit(1);
+  const [created] = await db
+    .select()
+    .from(schema.users)
+    .orderBy(schema.users.id)
+    .limit(1);
   return created!;
 }

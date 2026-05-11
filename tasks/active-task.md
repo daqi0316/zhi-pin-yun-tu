@@ -1,8 +1,10 @@
 # 活跃任务
 
-## 当前任务：Phase 1 收尾 + Phase 2 推进
+## 当前任务：Phase 2 功能补全
 
-**优先级**: P0 - 核心功能
+详细开发路线图见 `tasks/roadmap.md`
+
+**下一步**: 候选人新建表单 → Offer 创建 → 面试创建/删除
 
 ### 已完成
 - [x] MySQL 8 迁移 (mysql2 + drizzle ORM)
@@ -16,9 +18,9 @@
 - [x] 岗位详情弹窗 (查看/编辑/删除/状态切换)
 - [x] TypeScript 零错误, vitest 10测试全通过
 - [x] 端到端 API 验证通过
+- [x] Position 列表关联候选人匹配数 (positionMatch.counts API + 卡片徽章 + 匹配候选人弹窗)
 
 ### 待办
-- [ ] Position 列表关联候选人匹配数
 - [ ] 角色权限: adminQuery 用于管理员专属操作
 - [ ] Analytics 仪表盘增强 (真实数据聚合图表)
 - [ ] 面试 BARS 评分与候选人画像评分联动

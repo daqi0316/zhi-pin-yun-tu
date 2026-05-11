@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router";
 import {
   LayoutDashboard,
   Users,
@@ -17,39 +17,41 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react'
-import { trpc } from '@/providers/trpc'
+} from "lucide-react";
+import { trpc } from "@/providers/trpc";
 
 const navItems = [
-  { key: '/', label: '总览', icon: LayoutDashboard },
-  { key: '/talent', label: '人才库', icon: Users },
-  { key: '/relations', label: '公司关联', icon: GitBranch },
-  { key: '/positions', label: '岗位管理', icon: Briefcase },
-  { key: '/channels', label: '渠道管理', icon: Building2 },
-  { key: '/interviews', label: '面试流程', icon: Route },
-  { key: '/profiles', label: '人才画像', icon: UserCircle },
-  { key: '/offers', label: 'Offer管理', icon: FileCheck },
-  { key: '/analytics', label: '数据分析', icon: BarChart3 },
-  { key: '/alerts', label: '预警监控', icon: ShieldAlert },
-]
+  { key: "/", label: "总览", icon: LayoutDashboard },
+  { key: "/talent", label: "人才库", icon: Users },
+  { key: "/relations", label: "公司关联", icon: GitBranch },
+  { key: "/positions", label: "岗位管理", icon: Briefcase },
+  { key: "/channels", label: "渠道管理", icon: Building2 },
+  { key: "/interviews", label: "面试流程", icon: Route },
+  { key: "/profiles", label: "人才画像", icon: UserCircle },
+  { key: "/offers", label: "Offer管理", icon: FileCheck },
+  { key: "/analytics", label: "数据分析", icon: BarChart3 },
+  { key: "/alerts", label: "预警监控", icon: ShieldAlert },
+];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState(false)
-  const [showCopilot, setShowCopilot] = useState(false)
-  const [searchVal, setSearchVal] = useState('')
-  const activeKey = location.pathname
-  const { data: currentUser } = trpc.auth.me.useQuery()
-  const { data: alertsData } = trpc.alert.list.useQuery(undefined, { staleTime: 30000 })
-  const unreadAlerts = alertsData?.filter(a => !a.isRead).length ?? 0
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
+  const [showCopilot, setShowCopilot] = useState(false);
+  const [searchVal, setSearchVal] = useState("");
+  const activeKey = location.pathname;
+  const { data: currentUser } = trpc.auth.me.useQuery();
+  const { data: alertsData } = trpc.alert.list.useQuery(undefined, {
+    staleTime: 30000,
+  });
+  const unreadAlerts = alertsData?.filter(a => !a.isRead).length ?? 0;
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => window.location.reload(),
-  })
+  });
 
   useEffect(() => {
-    setShowCopilot(false)
-  }, [location.pathname])
+    setShowCopilot(false);
+  }, [location.pathname]);
   return (
     <div className="min-h-screen bg-[#F4F6FA] flex">
       {/* Sidebar */}
@@ -57,8 +59,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="fixed left-0 top-0 h-full z-50 flex flex-col transition-all duration-300"
         style={{
           width: collapsed ? 72 : 240,
-          background: 'rgba(10, 15, 28, 0.95)',
-          backdropFilter: 'blur(24px)',
+          background: "rgba(10, 15, 28, 0.95)",
+          backdropFilter: "blur(24px)",
         }}
       >
         {/* Logo */}
@@ -75,27 +77,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => {
-            const isActive = activeKey === item.key
-            const Icon = item.icon
+          {navItems.map(item => {
+            const isActive = activeKey === item.key;
+            const Icon = item.icon;
             return (
               <button
                 key={item.key}
                 onClick={() => navigate(item.key)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
                   isActive
-                    ? 'bg-[#2D8FF0]/15 text-[#2D8FF0]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? "bg-[#2D8FF0]/15 text-[#2D8FF0]"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
                 title={collapsed ? item.label : undefined}
               >
-                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-[#2D8FF0]' : ''}`} />
+                <Icon
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-[#2D8FF0]" : ""}`}
+                />
                 {!collapsed && <span className="truncate">{item.label}</span>}
                 {isActive && !collapsed && (
                   <div className="ml-auto w-1 h-4 rounded-full bg-[#2D8FF0]" />
                 )}
               </button>
-            )
+            );
           })}
         </nav>
 
@@ -105,7 +109,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => setCollapsed(!collapsed)}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-sm"
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
             {!collapsed && <span>收起菜单</span>}
           </button>
         </div>
@@ -125,7 +133,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <input
                 type="text"
                 value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
+                onChange={e => setSearchVal(e.target.value)}
                 placeholder="AI 智能搜索：输入职位、技能或自然语言查询..."
                 className="w-full h-9 pl-10 pr-4 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20 focus:border-[#2D8FF0]/40 transition-all"
               />
@@ -136,7 +144,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3">
             {/* Notifications */}
             <button
-              onClick={() => navigate('/alerts')}
+              onClick={() => navigate("/alerts")}
               className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 transition-colors"
             >
               <Bell className="w-[18px] h-[18px] text-[#475569]" />
@@ -158,12 +166,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* User Avatar */}
             <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-medium">
-                {currentUser?.name?.charAt(0) || '?'}
+                {currentUser?.name?.charAt(0) || "?"}
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-medium text-[#1E293B]">{currentUser?.name || '未登录'}</p>
+                <p className="text-sm font-medium text-[#1E293B]">
+                  {currentUser?.name || "未登录"}
+                </p>
                 <p className="text-xs text-[#94A3B8]">
-                  {currentUser?.role === 'admin' ? '招聘总监' : '招聘专员'}
+                  {currentUser?.role === "admin" ? "招聘总监" : "招聘专员"}
                 </p>
               </div>
             </div>
@@ -179,9 +189,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
       </div>
 
       {/* Copilot Panel */}
@@ -196,7 +204,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-semibold text-[#1E293B]">AI 招聘助手</span>
+                <span className="font-semibold text-[#1E293B]">
+                  AI 招聘助手
+                </span>
               </div>
               <button
                 onClick={() => setShowCopilot(false)}
@@ -231,10 +241,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="space-y-3">
                 {[
-                  '对比张明远和李思涵的AI画像差异',
-                  '生成本月渠道转化率报表',
-                  '推荐初筛通过率最高的渠道',
-                  '分析本周面试爽约原因',
+                  "对比张明远和李思涵的AI画像差异",
+                  "生成本月渠道转化率报表",
+                  "推荐初筛通过率最高的渠道",
+                  "分析本周面试爽约原因",
                 ].map((q, i) => (
                   <button
                     key={i}
@@ -261,5 +271,5 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </div>
-  )
+  );
 }
