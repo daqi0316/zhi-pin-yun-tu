@@ -706,6 +706,111 @@ export const alertRouter = createRouter({
       type: alert.type,
     };
   }),
+
+  autoGenerate: adminQuery.mutation(async () => {
+    const db = getDb();
+    const now = new Date();
+    const generated: Array<{ title: string; type: string }> = [];
+
+    const allCandidates = await db.select().from(candidates);
+    const allInterviews = await db.select().from(interviews);
+    const allOffers = await db.select().from(offers);
+
+    // 1. 面试超时预警
+    const overdueInterviews = allInterviews.filter(iv => {
+      if (iv.status !== "pending" || !iv.scheduledTime) return false;
+      const st = new Date(iv.scheduledTime);
+      return st < now && now.getTime() - st.getTime() > 24 * 60 * 60 * 1000;
+    });
+    for (const iv of overdueInterviews) {
+      const exists = await db
+        .select()
+        .from(alerts)
+        .where(
+          and(
+            eq(alerts.candidateId, iv.candidateId),
+            eq(alerts.type, "warning"),
+            like(alerts.title, "%面试超时%")
+          )
+        )
+        .limit(1);
+      if (exists.length > 0) continue;
+      await db.insert(alerts).values({
+        type: "warning",
+        title: "面试超时未完成",
+        description: `候选人 #${iv.candidateId} 的 ${iv.stage} 面试已过 ${Math.ceil((now.getTime() - new Date(iv.scheduledTime).getTime()) / (24 * 60 * 60 * 1000))} 天未完成`,
+        candidateId: iv.candidateId,
+        action: "联系候选人",
+      });
+      generated.push({ title: "面试超时未完成", type: "warning" });
+    }
+
+    // 2. Offer到期预警
+    const expiringOffers = allOffers.filter(o => {
+      if (o.status !== "sent" && o.status !== "negotiating") return false;
+      const created = new Date(o.createdAt);
+      const days = Math.ceil(
+        (now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000)
+      );
+      return days > 7;
+    });
+    for (const o of expiringOffers) {
+      const exists = await db
+        .select()
+        .from(alerts)
+        .where(
+          and(
+            eq(alerts.candidateId, o.candidateId),
+            eq(alerts.type, "risk"),
+            like(alerts.title, "%Offer待响应%")
+          )
+        )
+        .limit(1);
+      if (exists.length > 0) continue;
+      await db.insert(alerts).values({
+        type: "risk",
+        title: "Offer待响应超7天",
+        description: `候选人 #${o.candidateId} 的 Offer 已发送超过7天未响应，存在流失风险`,
+        candidateId: o.candidateId,
+        action: "调整Offer",
+      });
+      generated.push({ title: "Offer待响应超7天", type: "risk" });
+    }
+
+    // 3. 长期未跟进
+    const staleCandidates = allCandidates.filter(c => {
+      if (c.stage !== "初筛") return false;
+      const days = Math.ceil(
+        (now.getTime() - new Date(c.createdAt).getTime()) /
+          (24 * 60 * 60 * 1000)
+      );
+      return days > 14;
+    });
+    for (const c of staleCandidates) {
+      const exists = await db
+        .select()
+        .from(alerts)
+        .where(
+          and(
+            eq(alerts.candidateId, c.id),
+            eq(alerts.type, "info"),
+            like(alerts.title, "%长期未跟进%")
+          )
+        )
+        .limit(1);
+      if (exists.length > 0) continue;
+      await db.insert(alerts).values({
+        type: "info",
+        title: "候选人长期未跟进",
+        description: `候选人 ${c.name} 入库 ${Math.ceil((now.getTime() - new Date(c.createdAt).getTime()) / (24 * 60 * 60 * 1000))} 天仍处于初筛阶段`,
+        candidateId: c.id,
+        action: "安排面试",
+      });
+      generated.push({ title: "候选人长期未跟进", type: "info" });
+    }
+
+    return { generated: generated.length, items: generated };
+  }),
 });
 
 // ─── Dashboard Stats ───

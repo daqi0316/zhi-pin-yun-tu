@@ -13,6 +13,8 @@ import {
   Plus,
   X,
   Trash2,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
@@ -259,6 +261,8 @@ function BarsResultSummary({ scores }: { scores: Record<string, number> }) {
 export default function InterviewFlow() {
   const { data: interviewList = [], refetch } = trpc.interview.list.useQuery();
   const updateScoreMutation = trpc.interview.updateScore.useMutation();
+  const generateFeedbackMutation =
+    trpc.ai.interview.generateFeedback.useMutation();
   const [selectedInterview, setSelectedInterview] = useState<any>(null);
   const [barsScores, setBarsScores] = useState<Record<string, number>>({});
   const [feedbackText, setFeedbackText] = useState("");
@@ -733,9 +737,47 @@ export default function InterviewFlow() {
                 <BarsResultSummary scores={barsScores} />
 
                 <div className="mt-4">
-                  <label className="text-sm font-medium text-[#1E293B] mb-2 block">
-                    评价备注
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-[#1E293B]">
+                      评价备注
+                    </label>
+                    <button
+                      onClick={() => {
+                        if (
+                          generateFeedbackMutation.isPending
+                        )
+                          return;
+                        if (
+                          !barsDimensions.every(
+                            d => barsScores[d.key] > 0
+                          ) &&
+                          !selectedInterview?.totalScore
+                        )
+                          return;
+                        generateFeedbackMutation.mutate(
+                          { interviewId: selectedInterview.id },
+                          {
+                            onSuccess: data => {
+                              setFeedbackText(data.feedback);
+                            },
+                          }
+                        );
+                      }}
+                      disabled={
+                        generateFeedbackMutation.isPending ||
+                        (!barsDimensions.every(d => barsScores[d.key] > 0) &&
+                          !selectedInterview?.totalScore)
+                      }
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[#2D8FF0] bg-[#2D8FF0]/10 hover:bg-[#2D8FF0]/20 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      {generateFeedbackMutation.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                      AI 生成评语
+                    </button>
+                  </div>
                   <textarea
                     value={feedbackText}
                     onChange={e => setFeedbackText(e.target.value)}

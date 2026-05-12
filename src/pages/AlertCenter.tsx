@@ -53,6 +53,7 @@ export default function AlertCenter() {
   const createMutation = trpc.alert.create.useMutation();
   const deleteMutation = trpc.alert.delete.useMutation();
   const executeActionMutation = trpc.alert.executeAction.useMutation();
+  const autoGenerateMutation = trpc.alert.autoGenerate.useMutation();
   const utils = trpc.useUtils();
   const [filter, setFilter] = useState("全部");
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
@@ -176,13 +177,34 @@ export default function AlertCenter() {
             </span>
           </div>
           {isAdmin && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="h-9 px-4 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              新建预警
-            </button>
+            <>
+              <button
+                onClick={() => setShowCreate(true)}
+                className="h-9 px-4 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                新建预警
+              </button>
+              <button
+                onClick={() => {
+                  autoGenerateMutation.mutate(undefined, {
+                    onSuccess: result => {
+                      utils.alert.list.invalidate();
+                      if (result.generated > 0) {
+                        alert(`已自动生成 ${result.generated} 条预警`);
+                      } else {
+                        alert("当前无需生成新预警");
+                      }
+                    },
+                  });
+                }}
+                disabled={autoGenerateMutation.isPending}
+                className="h-9 px-4 bg-[#8B5CF6] text-white rounded-xl text-sm font-medium hover:bg-[#7C3AED] transition-colors flex items-center gap-1.5 disabled:opacity-40"
+              >
+                <Zap className="w-4 h-4" />
+                {autoGenerateMutation.isPending ? "生成中..." : "自动生成"}
+              </button>
+            </>
           )}
         </div>
       </div>

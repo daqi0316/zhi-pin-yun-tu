@@ -18,6 +18,8 @@ import {
   positionMatchRouter,
 } from "./routers/scoring";
 import { analyticsRouter } from "./routers/analytics";
+import { searchRouter } from "./routers/search";
+import { aiRouter } from "./routers/ai";
 import { loginLocal } from "./auth-local";
 
 export const appRouter = createRouter({
@@ -72,6 +74,8 @@ export const appRouter = createRouter({
   relation: relationRouter,
   positionMatch: positionMatchRouter,
   analytics: analyticsRouter,
+  search: searchRouter,
+  ai: aiRouter,
 });
 
 export type AppRouter = typeof appRouter;

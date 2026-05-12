@@ -56,9 +56,9 @@ export interface IntentScoreInput {
 
 export interface ScoringInput {
   candidateSkills: string[];
-  candidateExperience: number; // 工作年限
-  candidateEducation: string; // 教育背景文本
-  candidateSalaryExpectation?: number; // 期望月薪（元）
+  candidateExperience: number;
+  candidateEducation: string;
+  candidateSalaryExpectation?: number;
   workHistory?: Array<{
     company: string;
     position?: string;
@@ -66,7 +66,6 @@ export interface ScoringInput {
     endDate?: string;
     description?: string;
   }>;
-  // 岗位要求
   positionRequiredSkills: string[];
   positionBonusSkills: string[];
   positionMinExperience: number;
@@ -74,6 +73,104 @@ export interface ScoringInput {
   positionMinEducation?: string;
   positionSalaryMin?: number;
   positionSalaryMax?: number;
+  positionType?: "技术" | "产品" | "运营" | "设计" | "其他";
+  customBigTech?: string[];
+  customWeights?: Partial<ScoringWeights>;
+}
+
+export interface ScoringWeights {
+  skillMatch: number;
+  experienceMatch: number;
+  education: number;
+  capabilitySignal: number;
+  stability: number;
+  salaryFit: number;
+}
+
+export const DEFAULT_WEIGHTS: Record<string, ScoringWeights> = {
+  default: {
+    skillMatch: 0.3,
+    experienceMatch: 0.25,
+    education: 0.1,
+    capabilitySignal: 0.15,
+    stability: 0.1,
+    salaryFit: 0.1,
+  },
+  技术: {
+    skillMatch: 0.35,
+    experienceMatch: 0.2,
+    education: 0.1,
+    capabilitySignal: 0.2,
+    stability: 0.08,
+    salaryFit: 0.07,
+  },
+  产品: {
+    skillMatch: 0.2,
+    experienceMatch: 0.25,
+    education: 0.15,
+    capabilitySignal: 0.15,
+    stability: 0.1,
+    salaryFit: 0.15,
+  },
+  运营: {
+    skillMatch: 0.15,
+    experienceMatch: 0.3,
+    education: 0.1,
+    capabilitySignal: 0.15,
+    stability: 0.15,
+    salaryFit: 0.15,
+  },
+};
+
+export const BIG_TECH_COMPANIES = [
+  "腾讯",
+  "阿里巴巴",
+  "字节跳动",
+  "百度",
+  "华为",
+  "美团",
+  "京东",
+  "网易",
+  "小米",
+  "蚂蚁",
+  "滴滴",
+  "快手",
+  "拼多多",
+  "小红书",
+  "bilibili",
+];
+
+export function detectPositionType(
+  title: string,
+  skills: string[]
+): "技术" | "产品" | "运营" | "设计" | "其他" {
+  const t = title.toLowerCase();
+  const s = skills.join(",").toLowerCase();
+
+  const techKeywords = [
+    "java",
+    "python",
+    "前端",
+    "后端",
+    "算法",
+    "架构",
+    "工程师",
+    "开发",
+    "devops",
+    "测试",
+    "数据",
+    "ai",
+    "机器学习",
+  ];
+  const productKeywords = ["产品经理", "pm", "产品总监", "产品负责人"];
+  const opsKeywords = ["运营", "市场", "销售", "商务", "渠道", "客服"];
+  const designKeywords = ["设计", "ui", "ux", "视觉", "交互", "创意"];
+
+  if (techKeywords.some(k => t.includes(k) || s.includes(k))) return "技术";
+  if (productKeywords.some(k => t.includes(k) || s.includes(k))) return "产品";
+  if (opsKeywords.some(k => t.includes(k) || s.includes(k))) return "运营";
+  if (designKeywords.some(k => t.includes(k) || s.includes(k))) return "设计";
+  return "其他";
 }
 
 // ─── 辅助函数 ───
@@ -210,7 +307,8 @@ function calcEducation(education: string): DimensionScore {
 // ─── 维度四：能力信号（权重15%） ───
 
 function calcCapabilitySignal(
-  workHistory?: ScoringInput["workHistory"]
+  workHistory?: ScoringInput["workHistory"],
+  customBigTech?: string[]
 ): DimensionScore {
   if (!workHistory || workHistory.length === 0) {
     return {
@@ -223,21 +321,7 @@ function calcCapabilitySignal(
 
   let signalScore = 0;
 
-  // 大厂背景 (30%)
-  const bigTech = [
-    "腾讯",
-    "阿里巴巴",
-    "字节跳动",
-    "百度",
-    "华为",
-    "美团",
-    "京东",
-    "网易",
-    "小米",
-    "蚂蚁",
-    "滴滴",
-    "快手",
-  ];
+  const bigTech = customBigTech ?? BIG_TECH_COMPANIES;
   const hasBigTech = workHistory.some(w =>
     bigTech.some(b => w.company.includes(b))
   );
@@ -362,6 +446,11 @@ function calcSalaryFit(
 // ─── 主入口 ───
 
 export function calculateResumeScore(input: ScoringInput): ResumeScoreResult {
+  const weights =
+    input.customWeights ??
+    DEFAULT_WEIGHTS[input.positionType ?? "default"] ??
+    DEFAULT_WEIGHTS["default"];
+
   const skillMatch = calcSkillMatch(
     input.candidateSkills,
     input.positionRequiredSkills,
@@ -374,7 +463,10 @@ export function calculateResumeScore(input: ScoringInput): ResumeScoreResult {
     input.workHistory
   );
   const education = calcEducation(input.candidateEducation);
-  const capabilitySignal = calcCapabilitySignal(input.workHistory);
+  const capabilitySignal = calcCapabilitySignal(
+    input.workHistory,
+    input.customBigTech
+  );
   const stability = calcStability(input.candidateExperience, input.workHistory);
   const salaryFit = calcSalaryFit(
     input.candidateSalaryExpectation,
@@ -382,14 +474,13 @@ export function calculateResumeScore(input: ScoringInput): ResumeScoreResult {
     input.positionSalaryMax
   );
 
-  // 综合得分 = 权重加权
   const total = Math.round(
-    skillMatch.score * 0.3 +
-      experienceMatch.score * 0.25 +
-      education.score * 0.1 +
-      capabilitySignal.score * 0.15 +
-      stability.score * 0.1 +
-      salaryFit.score * 0.1
+    skillMatch.score * weights.skillMatch +
+      experienceMatch.score * weights.experienceMatch +
+      education.score * weights.education +
+      capabilitySignal.score * weights.capabilitySignal +
+      stability.score * weights.stability +
+      salaryFit.score * weights.salaryFit
   );
 
   return {

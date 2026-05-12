@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { createRouter, authedQuery } from "../middleware";
 import { getDb } from "../../db/connection";
-import { candidates, interviews, offers, positions } from "../../db/schema";
+import {
+  candidates,
+  interviews,
+  offers,
+  positions,
+  channels,
+} from "../../db/schema";
 import { eq, desc, sql, gte, lte, and, count } from "drizzle-orm";
 
 function getWeekStart(date: Date): Date {
@@ -189,5 +195,22 @@ export const analyticsRouter = createRouter({
         status: pos.status,
       };
     });
+  }),
+
+  channelTrends: authedQuery.query(async () => {
+    const db = getDb();
+    const allChannels = await db.select().from(channels);
+
+    return allChannels.map(ch => ({
+      id: ch.id,
+      name: ch.name,
+      type: ch.type,
+      applications: ch.applications || 0,
+      interviews: ch.interviews || 0,
+      offers: ch.offers || 0,
+      conversionRate: ch.conversionRate || 0,
+      cost: ch.cost || 0,
+      roi: ch.roi || 0,
+    }));
   }),
 });

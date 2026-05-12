@@ -6,6 +6,7 @@ import { eq, desc, like } from "drizzle-orm";
 import {
   calculateResumeScore,
   calculateIntentScore,
+  detectPositionType,
   type ScoringInput,
 } from "../scoring";
 import { groupByCompany, analyzeCandidateRelations } from "../company-relation";
@@ -56,6 +57,7 @@ export const scoringRouter = createRouter({
       let maxExp = input.maxExperience ?? 10;
       let salaryMin = input.salaryMin;
       let salaryMax = input.salaryMax;
+      let posTitle = "";
 
       if (input.positionId) {
         const position = await db
@@ -64,6 +66,7 @@ export const scoringRouter = createRouter({
           .where(eq(positions.id, input.positionId))
           .limit(1);
         if (position[0]) {
+          posTitle = position[0].title ?? "";
           requiredSkills =
             requiredSkills.length > 0
               ? requiredSkills
@@ -97,6 +100,7 @@ export const scoringRouter = createRouter({
         positionMaxExperience: maxExp,
         positionSalaryMin: salaryMin,
         positionSalaryMax: salaryMax,
+        positionType: detectPositionType(posTitle, requiredSkills),
       };
 
       const result = calculateResumeScore(scoringInput);
@@ -184,6 +188,7 @@ export const scoringRouter = createRouter({
           positionMaxExperience: pos.maxExperience ?? 10,
           positionSalaryMin: pos.salaryMin ?? undefined,
           positionSalaryMax: pos.salaryMax ?? undefined,
+          positionType: detectPositionType(pos.title ?? "", requiredSkills),
         };
 
         const result = calculateResumeScore(scoringInput);
@@ -251,6 +256,7 @@ export const scoringRouter = createRouter({
       let maxExp = input.maxExperience ?? 10;
       let salaryMin: number | undefined;
       let salaryMax: number | undefined;
+      let posTitle = "";
 
       if (input.positionId) {
         const position = await db
@@ -259,6 +265,7 @@ export const scoringRouter = createRouter({
           .where(eq(positions.id, input.positionId))
           .limit(1);
         if (position[0]) {
+          posTitle = position[0].title ?? "";
           requiredSkills =
             requiredSkills.length > 0
               ? requiredSkills
@@ -297,9 +304,10 @@ export const scoringRouter = createRouter({
           positionBonusSkills: bonusSkills,
           positionMinExperience: minExp,
           positionMaxExperience: maxExp,
-          positionSalaryMin: salaryMin,
-          positionSalaryMax: salaryMax,
-        };
+        positionSalaryMin: salaryMin,
+        positionSalaryMax: salaryMax,
+        positionType: detectPositionType(posTitle, requiredSkills),
+      };
 
         const result = calculateResumeScore(scoringInput);
 
