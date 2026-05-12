@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics";
 import AlertCenter from "./pages/AlertCenter";
 import CompanyRelations from "./pages/CompanyRelations";
 import Positions from "./pages/Positions";
+import AuditLog from "./pages/AuditLog";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { trpc } from "./providers/trpc";
@@ -133,6 +134,16 @@ export default function App() {
           <RequireAuth>
             <AppLayout>
               <Positions />
+            </AppLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/audit"
+        element={
+          <RequireAuth>
+            <AppLayout>
+              <AuditLog />
             </AppLayout>
           </RequireAuth>
         }

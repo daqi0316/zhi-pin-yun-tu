@@ -28,7 +28,7 @@ if (env.isProduction) {
   const { serveStatic } = await import("@hono/node-server/serve-static");
   app.get("*", serveStatic({ root: "./dist/public" }));
 
-  const port = parseInt(process.env.PORT || "3000");
+  const port = parseInt(process.env.PORT || "3001");
   serve({ fetch: app.fetch, port }, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });

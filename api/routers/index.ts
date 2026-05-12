@@ -12,6 +12,8 @@ import {
 } from "../../db/schema";
 import { eq, desc, sql, like, or, and } from "drizzle-orm";
 import { calculateResumeScore, type ScoringInput } from "../scoring";
+import { recordAudit } from "../lib/audit";
+import { sendNotifications } from "../lib/notifications";
 
 // ─── Candidates ───
 export const candidateRouter = createRouter({
@@ -113,7 +115,7 @@ export const candidateRouter = createRouter({
         location: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       await db.insert(candidates).values({
         ...input,
@@ -125,6 +127,14 @@ export const candidateRouter = createRouter({
         .from(candidates)
         .orderBy(desc(candidates.id))
         .limit(1);
+      await recordAudit({
+        action: "create",
+        entityType: "candidate",
+        entityId: created.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+        changes: { name: { old: null, new: input.name } },
+      });
       return created;
     }),
 
@@ -152,8 +162,13 @@ export const candidateRouter = createRouter({
         }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      const [existing] = await db
+        .select()
+        .from(candidates)
+        .where(eq(candidates.id, input.id))
+        .limit(1);
       const updateData: Record<string, unknown> = { ...input.data };
       if (updateData.skills) {
         updateData.skills = JSON.stringify(updateData.skills);
@@ -168,12 +183,40 @@ export const candidateRouter = createRouter({
         .from(candidates)
         .where(eq(candidates.id, input.id))
         .limit(1);
+      if (existing) {
+        const changes: Record<string, { old: unknown; new: unknown }> = {};
+        for (const [key, val] of Object.entries(input.data)) {
+          if (existing[key as keyof typeof existing] !== val) {
+            changes[key] = {
+              old: existing[key as keyof typeof existing],
+              new: val,
+            };
+          }
+        }
+        if (Object.keys(changes).length > 0) {
+          await recordAudit({
+            action: "update",
+            entityType: "candidate",
+            entityId: input.id,
+            userId: ctx.user?.id,
+            userName: ctx.user?.name,
+            changes,
+          });
+        }
+      }
       return updated;
     }),
 
-  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+  delete: adminQuery.input(z.number()).mutation(async ({ input, ctx }) => {
     const db = getDb();
     await db.delete(candidates).where(eq(candidates.id, input));
+    await recordAudit({
+      action: "delete",
+      entityType: "candidate",
+      entityId: input,
+      userId: ctx.user?.id,
+      userName: ctx.user?.name,
+    });
     return { success: true };
   }),
 
@@ -306,8 +349,13 @@ export const interviewRouter = createRouter({
         status: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      const [existing] = await db
+        .select()
+        .from(interviews)
+        .where(eq(interviews.id, input.id))
+        .limit(1);
       const updateData: Record<string, unknown> = { ...input };
       delete (updateData as any).id;
 
@@ -398,6 +446,28 @@ export const interviewRouter = createRouter({
         }
       }
 
+      if (existing) {
+        const changes: Record<string, { old: unknown; new: unknown }> = {};
+        for (const [key, val] of Object.entries(input)) {
+          if (key !== "id" && existing[key as keyof typeof existing] !== val) {
+            changes[key] = {
+              old: existing[key as keyof typeof existing],
+              new: val,
+            };
+          }
+        }
+        if (Object.keys(changes).length > 0) {
+          await recordAudit({
+            action: "update",
+            entityType: "interview",
+            entityId: input.id,
+            userId: ctx.user?.id,
+            userName: ctx.user?.name,
+            changes,
+          });
+        }
+      }
+
       return updated;
     }),
 
@@ -412,7 +482,7 @@ export const interviewRouter = createRouter({
         type: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       await db.insert(interviews).values({
         candidateId: input.candidateId,
@@ -428,14 +498,79 @@ export const interviewRouter = createRouter({
         .from(interviews)
         .orderBy(desc(interviews.id))
         .limit(1);
+      await recordAudit({
+        action: "create",
+        entityType: "interview",
+        entityId: created.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+        changes: { stage: { old: null, new: input.stage ?? "初筛" } },
+      });
       return created;
     }),
 
-  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+  delete: adminQuery.input(z.number()).mutation(async ({ input, ctx }) => {
     const db = getDb();
     await db.delete(interviews).where(eq(interviews.id, input));
+    await recordAudit({
+      action: "delete",
+      entityType: "interview",
+      entityId: input,
+      userId: ctx.user?.id,
+      userName: ctx.user?.name,
+    });
     return { success: true };
   }),
+
+  calendar: authedQuery
+    .input(
+      z
+        .object({
+          year: z.number().optional(),
+          month: z.number().min(1).max(12).optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const now = new Date();
+      const year = input?.year ?? now.getFullYear();
+      const month = input?.month ?? now.getMonth() + 1;
+
+      const startDate = new Date(year, month - 1, 1).toISOString();
+      const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
+
+      const allInterviews = await db
+        .select()
+        .from(interviews)
+        .orderBy(desc(interviews.scheduledTime));
+
+      const monthInterviews = allInterviews.filter(iv => {
+        if (!iv.scheduledTime) return false;
+        const t = new Date(iv.scheduledTime).getTime();
+        const s = new Date(startDate).getTime();
+        const e = new Date(endDate).getTime();
+        return t >= s && t <= e;
+      });
+
+      const days: Record<string, typeof allInterviews> = {};
+      for (const iv of monthInterviews) {
+        const day = iv.scheduledTime!.slice(0, 10);
+        if (!days[day]) days[day] = [];
+        days[day].push(iv);
+      }
+
+      return {
+        year,
+        month,
+        total: monthInterviews.length,
+        days: Object.entries(days).map(([date, items]) => ({
+          date,
+          count: items.length,
+          items,
+        })),
+      };
+    }),
 });
 
 // ─── Offers ───
@@ -459,8 +594,13 @@ export const offerRouter = createRouter({
         }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      const [existing] = await db
+        .select()
+        .from(offers)
+        .where(eq(offers.id, input.id))
+        .limit(1);
       const updateData: Record<string, unknown> = {
         ...input.data,
         updatedAt: sql`CURRENT_TIMESTAMP()`,
@@ -476,6 +616,27 @@ export const offerRouter = createRouter({
         .from(offers)
         .where(eq(offers.id, input.id))
         .limit(1);
+      if (existing) {
+        const changes: Record<string, { old: unknown; new: unknown }> = {};
+        for (const [key, val] of Object.entries(input.data)) {
+          if (existing[key as keyof typeof existing] !== val) {
+            changes[key] = {
+              old: existing[key as keyof typeof existing],
+              new: val,
+            };
+          }
+        }
+        if (Object.keys(changes).length > 0) {
+          await recordAudit({
+            action: "update",
+            entityType: "offer",
+            entityId: input.id,
+            userId: ctx.user?.id,
+            userName: ctx.user?.name,
+            changes,
+          });
+        }
+      }
       return updated;
     }),
 
@@ -492,7 +653,7 @@ export const offerRouter = createRouter({
         notes: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const base = input.baseSalary ?? 0;
       const bon = input.bonus ?? 0;
@@ -514,12 +675,27 @@ export const offerRouter = createRouter({
         .from(offers)
         .orderBy(desc(offers.id))
         .limit(1);
+      await recordAudit({
+        action: "create",
+        entityType: "offer",
+        entityId: created.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+        changes: { totalPackage: { old: null, new: totalPackage } },
+      });
       return created;
     }),
 
-  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+  delete: adminQuery.input(z.number()).mutation(async ({ input, ctx }) => {
     const db = getDb();
     await db.delete(offers).where(eq(offers.id, input));
+    await recordAudit({
+      action: "delete",
+      entityType: "offer",
+      entityId: input,
+      userId: ctx.user?.id,
+      userName: ctx.user?.name,
+    });
     return { success: true };
   }),
 });
@@ -539,7 +715,7 @@ export const channelRouter = createRouter({
         cost: z.number().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       await db.insert(channels).values({
         name: input.name,
@@ -552,6 +728,14 @@ export const channelRouter = createRouter({
         .from(channels)
         .orderBy(desc(channels.id))
         .limit(1);
+      await recordAudit({
+        action: "create",
+        entityType: "channel",
+        entityId: created.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+        changes: { name: { old: null, new: input.name } },
+      });
       return created;
     }),
 
@@ -572,7 +756,7 @@ export const channelRouter = createRouter({
         }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       await db
         .update(channels)
@@ -583,12 +767,26 @@ export const channelRouter = createRouter({
         .from(channels)
         .where(eq(channels.id, input.id))
         .limit(1);
+      await recordAudit({
+        action: "update",
+        entityType: "channel",
+        entityId: input.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+      });
       return updated;
     }),
 
-  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+  delete: adminQuery.input(z.number()).mutation(async ({ input, ctx }) => {
     const db = getDb();
     await db.delete(channels).where(eq(channels.id, input));
+    await recordAudit({
+      action: "delete",
+      entityType: "channel",
+      entityId: input,
+      userId: ctx.user?.id,
+      userName: ctx.user?.name,
+    });
     return { success: true };
   }),
 });
@@ -622,7 +820,7 @@ export const alertRouter = createRouter({
         action: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       await db.insert(alerts).values({
         type: input.type,
@@ -637,6 +835,22 @@ export const alertRouter = createRouter({
         .from(alerts)
         .orderBy(desc(alerts.id))
         .limit(1);
+      await recordAudit({
+        action: "create",
+        entityType: "alert",
+        entityId: created.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+        changes: { title: { old: null, new: input.title } },
+      });
+      sendNotifications({
+        id: created.id,
+        type: created.type || "info",
+        title: created.title,
+        description: created.description,
+        candidateId: created.candidateId,
+        action: created.action,
+      }).catch(() => {});
       return created;
     }),
 
@@ -653,7 +867,7 @@ export const alertRouter = createRouter({
         }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const updateData: Record<string, unknown> = { ...input.data };
       if (input.data.candidateId === undefined) delete updateData.candidateId;
@@ -663,12 +877,26 @@ export const alertRouter = createRouter({
         .from(alerts)
         .where(eq(alerts.id, input.id))
         .limit(1);
+      await recordAudit({
+        action: "update",
+        entityType: "alert",
+        entityId: input.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+      });
       return updated;
     }),
 
-  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+  delete: adminQuery.input(z.number()).mutation(async ({ input, ctx }) => {
     const db = getDb();
     await db.delete(alerts).where(eq(alerts.id, input));
+    await recordAudit({
+      action: "delete",
+      entityType: "alert",
+      entityId: input,
+      userId: ctx.user?.id,
+      userName: ctx.user?.name,
+    });
     return { success: true };
   }),
 
@@ -808,6 +1036,28 @@ export const alertRouter = createRouter({
       });
       generated.push({ title: "候选人长期未跟进", type: "info" });
     }
+
+    // 异步发送通知（不阻塞响应）
+    (async () => {
+      try {
+        const recentAlerts = await db
+          .select()
+          .from(alerts)
+          .where(eq(alerts.isRead, 0))
+          .orderBy(desc(alerts.id))
+          .limit(generated.length || 10);
+        for (const a of recentAlerts) {
+          await sendNotifications({
+            id: a.id,
+            type: a.type || "info",
+            title: a.title,
+            description: a.description,
+            candidateId: a.candidateId,
+            action: a.action,
+          });
+        }
+      } catch {}
+    })();
 
     return { generated: generated.length, items: generated };
   }),
@@ -1018,7 +1268,7 @@ export const positionRouter = createRouter({
         salaryRange: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const data = {
         ...input,
@@ -1031,6 +1281,14 @@ export const positionRouter = createRouter({
         .from(positions)
         .orderBy(desc(positions.id))
         .limit(1);
+      await recordAudit({
+        action: "create",
+        entityType: "position",
+        entityId: created.id,
+        userId: ctx.user?.id,
+        userName: ctx.user?.name,
+        changes: { title: { old: null, new: input.title } },
+      });
       return created;
     }),
 
@@ -1055,7 +1313,7 @@ export const positionRouter = createRouter({
         }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const updateData: Record<string, unknown> = {
         ...input.data,
@@ -1074,12 +1332,101 @@ export const positionRouter = createRouter({
         .from(positions)
         .where(eq(positions.id, input.id))
         .limit(1);
+      if (Object.keys(input.data).length > 0) {
+        await recordAudit({
+          action: "update",
+          entityType: "position",
+          entityId: input.id,
+          userId: ctx.user?.id,
+          userName: ctx.user?.name,
+        });
+      }
+
+      const scoringChanged =
+        input.data.requiredSkills ||
+        input.data.bonusSkills ||
+        input.data.minExperience !== undefined ||
+        input.data.maxExperience !== undefined ||
+        input.data.salaryMin !== undefined ||
+        input.data.salaryMax !== undefined;
+
+      if (scoringChanged) {
+        try {
+          const pos = updated;
+          const requiredSkills = JSON.parse(
+            pos.requiredSkills || "[]"
+          ) as string[];
+          const bonusSkills = JSON.parse(pos.bonusSkills || "[]") as string[];
+          const posTitle = pos.title ?? "";
+
+          const allCandidates = await db
+            .select()
+            .from(candidates)
+            .where(eq(candidates.status, "active"));
+
+          const allWork = await db.select().from(workHistories);
+
+          let rescored = 0;
+          for (const c of allCandidates) {
+            const cWork = allWork.filter(w => w.candidateId === c.id);
+            const result = calculateResumeScore({
+              candidateSkills: JSON.parse(c.skills || "[]"),
+              candidateExperience: c.experience ?? 0,
+              candidateEducation: c.education ?? "",
+              candidateSalaryExpectation: c.salaryExpectation ?? undefined,
+              workHistory: cWork.map(w => ({
+                company: w.company,
+                position: w.position ?? undefined,
+                startDate: w.startDate ?? undefined,
+                endDate: w.endDate ?? undefined,
+              })),
+              positionRequiredSkills: requiredSkills,
+              positionBonusSkills: bonusSkills,
+              positionMinExperience: pos.minExperience ?? 0,
+              positionMaxExperience: pos.maxExperience ?? 10,
+              positionSalaryMin: pos.salaryMin ?? undefined,
+              positionSalaryMax: pos.salaryMax ?? undefined,
+            });
+
+            const intentResult = calculateIntentScore({
+              candidateStatus: c.status ?? "在职",
+              candidateStage: c.stage ?? "初筛",
+              candidateSalaryExpectation: c.salaryExpectation ?? undefined,
+              positionSalaryMin: pos.salaryMin ?? undefined,
+              positionSalaryMax: pos.salaryMax ?? undefined,
+              candidateSource: c.source ?? undefined,
+            });
+
+            await db
+              .update(candidates)
+              .set({
+                matchScore: result.total,
+                intentScore: intentResult.total,
+              })
+              .where(eq(candidates.id, c.id));
+            rescored++;
+          }
+          console.log(
+            `[auto-match] 岗位 "${updated.title}" 更新，自动重算 ${rescored} 位候选人匹配分`
+          );
+        } catch (err) {
+          console.error("[auto-match] 自动匹配失败:", err);
+        }
+      }
+
       return updated;
     }),
 
-  delete: adminQuery.input(z.number()).mutation(async ({ input }) => {
+  delete: adminQuery.input(z.number()).mutation(async ({ input, ctx }) => {
     const db = getDb();
     await db.delete(positions).where(eq(positions.id, input));
+    await recordAudit({
+      action: "delete",
+      entityType: "position",
+      entityId: input,
+      userId: ctx.user?.id,
+      userName: ctx.user?.name,
+    });
     return { success: true };
   }),
 

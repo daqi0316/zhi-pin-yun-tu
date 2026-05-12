@@ -20,6 +20,9 @@ import {
 import { analyticsRouter } from "./routers/analytics";
 import { searchRouter } from "./routers/search";
 import { aiRouter } from "./routers/ai";
+import { auditLogRouter } from "./routers/audit";
+import { notificationRouter } from "./routers/notifications";
+import { exportRouter } from "./routers/export";
 import { loginLocal } from "./auth-local";
 
 export const appRouter = createRouter({
@@ -76,6 +79,9 @@ export const appRouter = createRouter({
   analytics: analyticsRouter,
   search: searchRouter,
   ai: aiRouter,
+  auditLog: auditLogRouter,
+  notification: notificationRouter,
+  export: exportRouter,
 });
 
 export type AppRouter = typeof appRouter;

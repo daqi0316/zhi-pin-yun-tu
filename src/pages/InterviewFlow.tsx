@@ -17,6 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { InterviewCalendar } from "@/components/InterviewCalendar";
 
 const stageColors: Record<
   string,
@@ -268,6 +269,15 @@ export default function InterviewFlow() {
   const [feedbackText, setFeedbackText] = useState("");
   const [showBars, setShowBars] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1);
+
+  const { data: calendarData } = trpc.interview.calendar.useQuery({
+    year: calYear,
+    month: calMonth,
+  });
+
   const [newInterview, setNewInterview] = useState({
     candidateId: "",
     positionId: "",
@@ -360,9 +370,29 @@ export default function InterviewFlow() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1E293B]">面试流程</h1>
-          <p className="text-sm text-[#94A3B8] mt-1">
-            BARS行为锚定评分法 · 结构化面试评估
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <button
+              onClick={() => setShowCalendar(false)}
+              className={`text-sm px-2 py-0.5 rounded transition-colors ${
+                !showCalendar
+                  ? "bg-[#2D8FF0] text-white"
+                  : "text-[#94A3B8] hover:text-[#475569]"
+              }`}
+            >
+              看板
+            </button>
+            <span className="text-[#CBD5E1]">|</span>
+            <button
+              onClick={() => setShowCalendar(true)}
+              className={`text-sm px-2 py-0.5 rounded transition-colors ${
+                showCalendar
+                  ? "bg-[#2D8FF0] text-white"
+                  : "text-[#94A3B8] hover:text-[#475569]"
+              }`}
+            >
+              日历
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -392,114 +422,138 @@ export default function InterviewFlow() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-        <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-          {stages.map(stageName => {
-            const stageCandidates = getCandidatesByStage(stageName);
-            const colors = stageColors[stageName] || stageColors["初筛"];
-            return (
-              <div key={stageName} className="flex-shrink-0 w-[260px]">
-                <div
-                  className="flex items-center justify-between px-3 py-2 rounded-xl mb-3"
-                  style={{
-                    background: colors.bg,
-                    border: `1px solid ${colors.border}`,
-                  }}
-                >
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: colors.text }}
+      {showCalendar ? (
+        <InterviewCalendar
+          data={calendarData}
+          year={calYear}
+          month={calMonth}
+          onPrevMonth={() => {
+            if (calMonth === 1) {
+              setCalMonth(12);
+              setCalYear(y => y - 1);
+            } else {
+              setCalMonth(m => m - 1);
+            }
+          }}
+          onNextMonth={() => {
+            if (calMonth === 12) {
+              setCalMonth(1);
+              setCalYear(y => y + 1);
+            } else {
+              setCalMonth(m => m + 1);
+            }
+          }}
+        />
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
+          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+            {stages.map(stageName => {
+              const stageCandidates = getCandidatesByStage(stageName);
+              const colors = stageColors[stageName] || stageColors["初筛"];
+              return (
+                <div key={stageName} className="flex-shrink-0 w-[260px]">
+                  <div
+                    className="flex items-center justify-between px-3 py-2 rounded-xl mb-3"
+                    style={{
+                      background: colors.bg,
+                      border: `1px solid ${colors.border}`,
+                    }}
                   >
-                    {stageName}
-                  </span>
-                  <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: colors.border, color: colors.text }}
-                  >
-                    {stageCandidates.length}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {stageCandidates.map((iv: any) => {
-                    const status =
-                      statusConfig[iv.status] || statusConfig["pending"];
-                    const StatusIcon = status.icon;
-                    const typeCfg =
-                      interviewTypeConfig[iv.type] ||
-                      interviewTypeConfig["视频"];
-                    const TypeIcon = typeCfg.icon;
-                    return (
-                      <div
-                        key={iv.id}
-                        className="bg-white border border-slate-200/80 rounded-xl p-3 cursor-pointer hover:shadow-md hover:border-[#2D8FF0]/20 transition-all"
-                        onClick={() => {
-                          if (iv.status === "pending") {
-                            setSelectedInterview(iv);
-                            setBarsScores({});
-                            setFeedbackText("");
-                            setShowBars(true);
-                          } else {
-                            setSelectedInterview(iv);
-                            setShowBars(false);
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-medium">
-                            {(iv.interviewer || "?").charAt(0)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-[#1E293B] truncate">
-                              候选人#{iv.candidateId}
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {stageName}
+                    </span>
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{ background: colors.border, color: colors.text }}
+                    >
+                      {stageCandidates.length}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {stageCandidates.map((iv: any) => {
+                      const status =
+                        statusConfig[iv.status] || statusConfig["pending"];
+                      const StatusIcon = status.icon;
+                      const typeCfg =
+                        interviewTypeConfig[iv.type] ||
+                        interviewTypeConfig["视频"];
+                      const TypeIcon = typeCfg.icon;
+                      return (
+                        <div
+                          key={iv.id}
+                          className="bg-white border border-slate-200/80 rounded-xl p-3 cursor-pointer hover:shadow-md hover:border-[#2D8FF0]/20 transition-all"
+                          onClick={() => {
+                            if (iv.status === "pending") {
+                              setSelectedInterview(iv);
+                              setBarsScores({});
+                              setFeedbackText("");
+                              setShowBars(true);
+                            } else {
+                              setSelectedInterview(iv);
+                              setShowBars(false);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-medium">
+                              {(iv.interviewer || "?").charAt(0)}
                             </div>
-                            <div className="text-[10px] text-[#94A3B8] truncate">
-                              {iv.stage}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-[#1E293B] truncate">
+                                候选人#{iv.candidateId}
+                              </div>
+                              <div className="text-[10px] text-[#94A3B8] truncate">
+                                {iv.stage}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <TypeIcon
-                              className="w-3 h-3"
-                              style={{ color: typeCfg.color }}
-                            />
-                            <span className="text-[10px] text-[#94A3B8]">
-                              {iv.type || "面试"}
-                            </span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <TypeIcon
+                                className="w-3 h-3"
+                                style={{ color: typeCfg.color }}
+                              />
+                              <span className="text-[10px] text-[#94A3B8]">
+                                {iv.type || "面试"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <StatusIcon
+                                className="w-3 h-3"
+                                style={{ color: status.color }}
+                              />
+                              <span
+                                className="text-[10px]"
+                                style={{ color: status.color }}
+                              >
+                                {status.label}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <StatusIcon
-                              className="w-3 h-3"
-                              style={{ color: status.color }}
-                            />
-                            <span
-                              className="text-[10px]"
-                              style={{ color: status.color }}
-                            >
-                              {status.label}
-                            </span>
+                          <div className="mt-1.5 text-[10px] text-[#94A3B8]">
+                            {iv.scheduledTime || ""}
                           </div>
+                          {iv.totalScore && (
+                            <div className="mt-1.5 flex items-center gap-1">
+                              <Star className="w-3 h-3 text-[#F59E0B] fill-[#F59E0B]" />
+                              <span className="text-xs font-semibold text-[#F59E0B]">
+                                {iv.totalScore}分
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <div className="mt-1.5 text-[10px] text-[#94A3B8]">
-                          {iv.scheduledTime || ""}
-                        </div>
-                        {iv.totalScore && (
-                          <div className="mt-1.5 flex items-center gap-1">
-                            <Star className="w-3 h-3 text-[#F59E0B] fill-[#F59E0B]" />
-                            <span className="text-xs font-semibold text-[#F59E0B]">
-                              {iv.totalScore}分
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100">
@@ -743,14 +797,9 @@ export default function InterviewFlow() {
                     </label>
                     <button
                       onClick={() => {
+                        if (generateFeedbackMutation.isPending) return;
                         if (
-                          generateFeedbackMutation.isPending
-                        )
-                          return;
-                        if (
-                          !barsDimensions.every(
-                            d => barsScores[d.key] > 0
-                          ) &&
+                          !barsDimensions.every(d => barsScores[d.key] > 0) &&
                           !selectedInterview?.totalScore
                         )
                           return;

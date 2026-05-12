@@ -6,7 +6,7 @@
 
 ---
 
-## Sprint 1-6 已完成 (25/25 任务)
+## Sprint 1-7 已完成 (32/32 任务)
 
 ### Sprint 1 — CRUD 补全 ✅
 - [x] 候选人新建表单 + 编辑 + 删除
@@ -40,16 +40,38 @@
 - [x] DEFAULT_WEIGHTS 按岗位类型(技术/产品/运营)差异化权重 + detectPositionType
 
 ### Sprint 6 — 高级功能 ✅
-- [x] AI Copilot 对接 Kimi (api/routers/ai.ts chat.send + Layout Copilot面板)
+- [x] AI Copilot 对接 DeepSeek (api/routers/ai.ts chat.send + Layout Copilot面板)
 - [x] AI 面试评语生成 (基于 BARS 分数自动生成 + InterviewFlow 按钮)
+
+### Sprint 7 — 基础设施增强 ✅ (2026-05-12)
+- [x] API 集成测试: 109 tests / 4 files (BARS评分/Offer总包/仪表盘KPI/预警过滤/漏斗/岗位效率)
+- [x] 审计日志: auditLogs表 + recordAudit + auditLogRouter + 前端AuditLog页面 + 全CRUD追踪
+- [x] 候选人自动匹配触发器: position.update 变更时自动重算所有候选人匹配分
+- [x] 通知推送集成: notificationSubscriptions表 + Webhook/钉钉通知 + alert创建/自动生成触发
+- [x] 数据导出: CSV导出候选人/面试/Offer + 前端导出按钮
+- [x] 面试排期日历: interview.calendar端点 + InterviewCalendar组件 + 看板/日历切换
+- [x] 移动端响应式适配: 汉堡菜单 + 侧边栏overlay + 响应式间距
 
 ---
 
 ## 技术备忘
 
-- **端口**: 3000 被 `/Users/qixia/Downloads/harness-engineering/app/` 占用，本机开发用 3001
-- **测试**: `npx vitest run` — 18 tests, api/scoring.test.ts
+- **端口**: 3001（vite.config.ts + api/boot.ts + .env，3000被harness-engineering占用）
+- **APP_URL**: http://localhost:3000（通知链接用，生产需改为实际域名）
+- **测试**: `npx vitest run` — 109 tests, 4 files, 零失败
 - **类型检查**: `npx tsc --noEmit` — 零错误
 - **DB**: MySQL 8 本地运行，用户 `root:723319`，库名 `zhypx`
-- **关键文件**: `api/router.ts` (路由注册), `api/scoring.ts` (评分引擎), `db/schema.ts` (数据表)
-- **KIMI_API_KEY**: 需在 .env 中配置后方可启用 AI Copilot 和 AI 面试评语功能
+- **Docker**: `docker compose up -d` 启动 MySQL
+- **关键文件**: `api/router.ts` (17个子路由), `api/scoring.ts` (评分引擎), `db/schema.ts` (9张表)
+- **DEEPSEEK_API_KEY**: 需在 .env 中配置后方可启用 AI Copilot 和 AI 面试评语功能
+
+## 当前系统规模
+
+| 维度 | 数量 |
+|------|------|
+| API 子路由 | 17 个 |
+| 数据库表 | 9 张 |
+| 前端页面 | 13 个 |
+| 测试文件 | 4 个 (109 tests) |
+| shadcn/ui 组件 | 40+ |
+| Sprint 总数 | 7 个 (32 tasks) |

@@ -154,3 +154,27 @@ export const alerts = mysqlTable("alerts", {
 });
 
 export type Alert = typeof alerts.$inferSelect;
+
+export const auditLogs = mysqlTable("auditLogs", {
+  id: int("id").primaryKey().autoincrement(),
+  action: varchar("action", { length: 20 }).notNull(),
+  entityType: varchar("entityType", { length: 50 }).notNull(),
+  entityId: int("entityId").notNull(),
+  userId: int("userId"),
+  userName: varchar("userName", { length: 100 }),
+  changes: text("changes"),
+  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+
+export const notificationSubscriptions = mysqlTable("notificationSubscriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  channel: varchar("channel", { length: 50 }).notNull(),
+  webhookUrl: varchar("webhookUrl", { length: 500 }).notNull(),
+  enabled: int("enabled").default(1),
+  createdBy: int("createdBy"),
+  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+});
+
+export type NotificationSubscription = typeof notificationSubscriptions.$inferSelect;

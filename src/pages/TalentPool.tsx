@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -15,6 +15,7 @@ import {
   FileText,
   Bell,
   ArrowRight,
+  Download,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
@@ -63,6 +64,9 @@ export default function TalentPool() {
     useState<CandidateDetail | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const utils = trpc.useUtils();
   const [newCandidate, setNewCandidate] = useState({
     name: "",
     phone: "",
@@ -86,6 +90,27 @@ export default function TalentPool() {
   });
 
   const candidates = data?.items ?? [];
+
+  useEffect(() => {
+    if (!exporting) return;
+    utils.export.candidatesCSV
+      .fetch()
+      .then(result => {
+        if (result?.csv && result?.filename) {
+          const blob = new Blob([result.csv], {
+            type: "text/csv;charset=utf-8;",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = result.filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+        setExporting(false);
+      })
+      .catch(() => setExporting(false));
+  }, [exporting, utils]);
 
   const { data: candidateDetail } = trpc.candidate.detail.useQuery(
     selectedId!,
@@ -168,12 +193,21 @@ export default function TalentPool() {
             共 {data?.total ?? 0} 位候选人 · 本页 {candidates.length} 位
           </p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="h-9 px-4 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors"
-        >
-          + 新增候选人
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setExporting(true)}
+            className="h-9 px-4 border border-slate-200 text-[#1E293B] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            导出CSV
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="h-9 px-4 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors"
+          >
+            + 新增候选人
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

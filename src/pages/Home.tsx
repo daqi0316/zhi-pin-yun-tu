@@ -33,10 +33,7 @@ class ErrorBoundaryFallback extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          className="fixed inset-0"
-          style={{ background: "#0A0F1C" }}
-        />
+        <div className="fixed inset-0" style={{ background: "#0A0F1C" }} />
       );
     }
     return this.props.children;
@@ -124,9 +121,9 @@ export default function Home() {
           </div>
         }
       >
-      <ErrorBoundaryFallback>
-        <ConstellationBackground />
-      </ErrorBoundaryFallback>
+        <ErrorBoundaryFallback>
+          <ConstellationBackground />
+        </ErrorBoundaryFallback>
       </Suspense>
 
       <div className="relative z-10 p-6 space-y-6">

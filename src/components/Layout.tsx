@@ -21,6 +21,8 @@ import {
   Loader2,
   User,
   Bot,
+  Shield,
+  Menu,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
@@ -40,12 +42,14 @@ const navItems = [
   { key: "/offers", label: "Offer管理", icon: FileCheck },
   { key: "/analytics", label: "数据分析", icon: BarChart3 },
   { key: "/alerts", label: "预警监控", icon: ShieldAlert },
+  { key: "/audit", label: "操作日志", icon: Shield },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
   const [copilotMsg, setCopilotMsg] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -104,7 +108,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const handleCopilotSend = (msg: string) => {
     if (!msg.trim() || aiChatMutation.isPending) return;
-    const newHistory = [...chatHistory, { role: "user" as const, content: msg }];
+    const newHistory = [
+      ...chatHistory,
+      { role: "user" as const, content: msg },
+    ];
     setChatHistory(newHistory);
     setCopilotMsg("");
     aiChatMutation.mutate({
@@ -123,8 +130,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#F4F6FA] flex">
       {/* Sidebar */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
       <aside
-        className="fixed left-0 top-0 h-full z-50 flex flex-col transition-all duration-300"
+        className={`fixed left-0 top-0 h-full z-50 flex flex-col transition-all duration-300 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
         style={{
           width: collapsed ? 72 : 240,
           background: "rgba(10, 15, 28, 0.95)",
@@ -193,9 +208,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         style={{ marginLeft: collapsed ? 72 : 240 }}
       >
         {/* Top Bar */}
-        <header className="h-[60px] bg-white/80 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-6 sticky top-0 z-40">
+        <header className="h-[60px] bg-white/80 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-40">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden mr-2 p-1.5 hover:bg-slate-100 rounded-lg"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
           {/* Search */}
-          <div className="flex-1 max-w-xl">
+          <div className="flex-1 max-w-xl ml-2 md:ml-0">
             <div className="relative" ref={searchRef}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -358,14 +379,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* User Avatar */}
             <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-medium">
-                {currentUser && typeof currentUser === "object" ? currentUser.name.charAt(0) : "?"}
+                {currentUser && typeof currentUser === "object"
+                  ? currentUser.name.charAt(0)
+                  : "?"}
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-[#1E293B]">
-                  {currentUser && typeof currentUser === "object" ? currentUser.name : "未登录"}
+                  {currentUser && typeof currentUser === "object"
+                    ? currentUser.name
+                    : "未登录"}
                 </p>
                 <p className="text-xs text-[#94A3B8]">
-                  {currentUser && typeof currentUser === "object" && currentUser.role === "admin" ? "招聘总监" : "招聘专员"}
+                  {currentUser &&
+                  typeof currentUser === "object" &&
+                  currentUser.role === "admin"
+                    ? "招聘总监"
+                    : "招聘专员"}
                 </p>
               </div>
             </div>
@@ -381,7 +410,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">{children}</main>
       </div>
 
       {/* Copilot Panel */}

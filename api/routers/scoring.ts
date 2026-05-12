@@ -304,10 +304,10 @@ export const scoringRouter = createRouter({
           positionBonusSkills: bonusSkills,
           positionMinExperience: minExp,
           positionMaxExperience: maxExp,
-        positionSalaryMin: salaryMin,
-        positionSalaryMax: salaryMax,
-        positionType: detectPositionType(posTitle, requiredSkills),
-      };
+          positionSalaryMin: salaryMin,
+          positionSalaryMax: salaryMax,
+          positionType: detectPositionType(posTitle, requiredSkills),
+        };
 
         const result = calculateResumeScore(scoringInput);
 

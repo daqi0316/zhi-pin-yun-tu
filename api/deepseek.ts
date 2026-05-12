@@ -39,7 +39,9 @@ async function deepseekRequest<T>(
   });
   if (!resp.ok) {
     const text = await resp.text();
-    console.warn(`[deepseek] Request to ${path} failed (${resp.status}): ${text}`);
+    console.warn(
+      `[deepseek] Request to ${path} failed (${resp.status}): ${text}`
+    );
     return null;
   }
   return resp.json() as Promise<T>;
