@@ -16,5 +16,6 @@ export const env = {
   kimiAuthUrl: required("KIMI_AUTH_URL"),
   kimiOpenUrl: required("KIMI_OPEN_URL"),
   ownerUnionId: process.env.OWNER_UNION_ID ?? "",
-  kimiApiKey: process.env.KIMI_API_KEY ?? "",
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
+  deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
 };

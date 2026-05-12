@@ -3,7 +3,7 @@ import { createRouter, authedQuery } from "../middleware";
 import { getDb } from "../../db/connection";
 import { interviews, candidates } from "../../db/schema";
 import { eq } from "drizzle-orm";
-import { chat, type ChatMessage } from "../kimi/platform";
+import { chatCompletions, type ChatMessage } from "../deepseek";
 import { env } from "../lib/env";
 
 const RECRUITMENT_SYSTEM_PROMPT = `你是「智聘云图」招聘管理系统中的AI招聘助手。你的职责是帮助HR和招聘经理完成以下任务：
@@ -34,9 +34,9 @@ export const aiRouter = createRouter({
         })
       )
       .mutation(async ({ input }) => {
-        const apiKey = env.kimiApiKey;
+        const apiKey = env.deepseekApiKey;
         if (!apiKey) {
-          throw new Error("KIMI_API_KEY 未配置，请在 .env 中设置");
+          throw new Error("DEEPSEEK_API_KEY 未配置，请在 .env 中设置");
         }
 
         const messages: ChatMessage[] = [
@@ -56,9 +56,11 @@ export const aiRouter = createRouter({
 
         messages.push({ role: "user", content: input.message });
 
-        const result = await chat.completions(messages, apiKey);
+        const result = await chatCompletions(messages, apiKey, {
+          baseUrl: env.deepseekBaseUrl,
+        });
         if (!result || !result.choices?.[0]?.message) {
-          throw new Error("Kimi API 返回空响应");
+          throw new Error("DeepSeek API 返回空响应");
         }
 
         return {
@@ -76,9 +78,9 @@ export const aiRouter = createRouter({
         })
       )
       .mutation(async ({ input }) => {
-        const apiKey = env.kimiApiKey;
+        const apiKey = env.deepseekApiKey;
         if (!apiKey) {
-          throw new Error("KIMI_API_KEY 未配置，请在 .env 中设置");
+          throw new Error("DEEPSEEK_API_KEY 未配置，请在 .env 中设置");
         }
 
         const db = getDb();
@@ -171,9 +173,11 @@ ${dimsText}
           },
         ];
 
-        const result = await chat.completions(messages, apiKey);
+        const result = await chatCompletions(messages, apiKey, {
+          baseUrl: env.deepseekBaseUrl,
+        });
         if (!result || !result.choices?.[0]?.message) {
-          throw new Error("Kimi API 返回空响应");
+          throw new Error("DeepSeek API 返回空响应");
         }
 
         const feedback = result.choices[0].message.content;
