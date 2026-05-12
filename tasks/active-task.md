@@ -1,12 +1,12 @@
 # 活跃任务
 
-## 当前阶段：Sprint 6 — 高级功能（待开发）
+## 当前阶段：全部完成 🎉
 
 > 详细开发路线图见 `tasks/completion-order.md`，架构设计见 `docs/architecture.md`
 
 ---
 
-## Sprint 1-5 已完成 (23/25 任务)
+## Sprint 1-6 已完成 (25/25 任务)
 
 ### Sprint 1 — CRUD 补全 ✅
 - [x] 候选人新建表单 + 编辑 + 删除
@@ -39,14 +39,9 @@
 - [x] BIG_TECH_COMPANIES 导出为常量 + customBigTech 参数支持
 - [x] DEFAULT_WEIGHTS 按岗位类型(技术/产品/运营)差异化权重 + detectPositionType
 
----
-
-## 待办: Sprint 6 — 高级功能（2天）
-
-| 序号 | 任务 | 工时 | 依赖 |
-|------|------|------|------|
-| 24 | AI Copilot 对接 Kimi | 2d | Kimi OAuth + 对话 API |
-| 25 | AI 面试评语生成 | 1d | 基于 BARS 分数自动生成 |
+### Sprint 6 — 高级功能 ✅
+- [x] AI Copilot 对接 Kimi (api/routers/ai.ts chat.send + Layout Copilot面板)
+- [x] AI 面试评语生成 (基于 BARS 分数自动生成 + InterviewFlow 按钮)
 
 ---
 
@@ -57,3 +52,4 @@
 - **类型检查**: `npx tsc --noEmit` — 零错误
 - **DB**: MySQL 8 本地运行，用户 `root:723319`，库名 `zhypx`
 - **关键文件**: `api/router.ts` (路由注册), `api/scoring.ts` (评分引擎), `db/schema.ts` (数据表)
+- **KIMI_API_KEY**: 需在 .env 中配置后方可启用 AI Copilot 和 AI 面试评语功能
