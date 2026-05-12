@@ -44,7 +44,7 @@ export const appRouter = createRouter({
       }),
 
     me: publicQuery.query(async ({ ctx }) => {
-      return ctx.user ?? null;
+      return ctx.user ?? false;
     }),
 
     logout: publicQuery.mutation(async ({ ctx }) => {
