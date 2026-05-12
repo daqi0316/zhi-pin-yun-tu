@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, Component } from "react";
 import { useNavigate } from "react-router";
 import {
   Users,
@@ -18,6 +18,30 @@ import { trpc } from "@/providers/trpc";
 const ConstellationBackground = lazy(
   () => import("@/components/ConstellationBackground")
 );
+
+class ErrorBoundaryFallback extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="fixed inset-0"
+          style={{ background: "#0A0F1C" }}
+        />
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -100,7 +124,9 @@ export default function Home() {
           </div>
         }
       >
+      <ErrorBoundaryFallback>
         <ConstellationBackground />
+      </ErrorBoundaryFallback>
       </Suspense>
 
       <div className="relative z-10 p-6 space-y-6">

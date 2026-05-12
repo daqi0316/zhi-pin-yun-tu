@@ -13,6 +13,10 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  optimizeDeps: {
+    exclude: ["bcryptjs", "mysql2", "jose", "cookie"],
+    entries: ["src/main.tsx"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
