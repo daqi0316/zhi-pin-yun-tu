@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import * as schema from "./schema";
 import { hashSync } from "bcryptjs";
 
-const DATABASE_URL = process.env.DATABASE_URL || "mysql://root:root@localhost:3306/zhypx";
+const DATABASE_URL = process.env.DATABASE_URL || "mysql://root:723319@localhost:3306/zhypx";
 
 async function seed() {
   const pool = mysql.createPool(DATABASE_URL);
@@ -99,6 +99,16 @@ async function seed() {
     { type: "warning", title: "渠道ROI下降", description: "智联招聘本月ROI已从3.8降至3.2，建议评估渠道投放策略。", isRead: 1, action: "优化渠道" },
   ];
   await db.insert(schema.alerts).values(alerts);
+
+  const positions = [
+    { title: "高级Java工程师", company: "智聘科技", department: "技术部", description: "负责核心业务系统架构设计与开发，主导微服务架构演进，保障系统高可用与性能优化", requiredSkills: JSON.stringify(["Java", "Spring Cloud", "MySQL", "Redis", "Kafka"]), bonusSkills: JSON.stringify(["Go", "Kubernetes", "Elasticsearch"]), minExperience: 5, maxExperience: 10, minEducation: "本科", salaryMin: 35000, salaryMax: 60000, salaryRange: "35K-60K", status: "active" },
+    { title: "产品经理", company: "智聘科技", department: "产品部", description: "负责B端SaaS产品规划与迭代，推动数据驱动的产品决策，协调研发与设计团队", requiredSkills: JSON.stringify(["产品设计", "数据分析", "Axure", "用户研究"]), bonusSkills: JSON.stringify(["SQL", "A/B测试", "JIRA"]), minExperience: 3, maxExperience: 8, minEducation: "本科", salaryMin: 30000, salaryMax: 50000, salaryRange: "30K-50K", status: "active" },
+    { title: "前端技术专家", company: "智聘科技", department: "技术部", description: "主导前端架构设计与技术选型，搭建前端工程化体系，推动前沿技术落地", requiredSkills: JSON.stringify(["React", "TypeScript", "Node.js", "性能优化"]), bonusSkills: JSON.stringify(["Three.js", "微前端", "Webpack"]), minExperience: 5, maxExperience: 10, minEducation: "本科", salaryMin: 35000, salaryMax: 55000, salaryRange: "35K-55K", status: "active" },
+    { title: "算法工程师", company: "智聘科技", department: "AI部", description: "负责NLP和推荐系统算法研发，构建智能化人才匹配引擎", requiredSkills: JSON.stringify(["Python", "PyTorch", "NLP", "深度学习"]), bonusSkills: JSON.stringify(["推荐系统", "大模型", "TensorRT"]), minExperience: 3, maxExperience: 8, minEducation: "硕士", salaryMin: 40000, salaryMax: 70000, salaryRange: "40K-70K", status: "active" },
+    { title: "UI/UX设计师", company: "智聘科技", department: "设计部", description: "负责B端产品交互与视觉设计，建设设计系统，推动设计标准化", requiredSkills: JSON.stringify(["Figma", "交互设计", "视觉设计"]), bonusSkills: JSON.stringify(["动效设计", "Design System", "前端开发"]), minExperience: 3, maxExperience: 7, minEducation: "本科", salaryMin: 25000, salaryMax: 40000, salaryRange: "25K-40K", status: "active" },
+    { title: "DevOps工程师", company: "智聘科技", department: "基础架构部", description: "负责云原生基础设施运维，CI/CD流水线建设，保障服务稳定运行", requiredSkills: JSON.stringify(["Docker", "Kubernetes", "CI/CD", "AWS/阿里云"]), bonusSkills: JSON.stringify(["Terraform", "Prometheus", "Grafana"]), minExperience: 4, maxExperience: 10, minEducation: "本科", salaryMin: 30000, salaryMax: 50000, salaryRange: "30K-50K", status: "active" },
+  ];
+  await db.insert(schema.positions).values(positions);
 
   console.log("✅ Seed data inserted successfully!");
   await pool.end();

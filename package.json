@@ -12,10 +12,13 @@
     "check": "tsc -b",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-"db:seed": "npx tsx db/seed.ts"
+    "db:seed": "npx tsx db/seed.ts",
+    "db:reset": "npx tsx db/reset.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.965.0",
@@ -56,7 +59,6 @@
     "@trpc/server": "^11.8.1",
     "@types/three": "^0.184.0",
     "bcryptjs": "^3.0.3",
-    
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -90,7 +92,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@hono/vite-dev-server": "^0.19.0",
-    
+    "@playwright/test": "^1.60.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

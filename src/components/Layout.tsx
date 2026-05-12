@@ -358,14 +358,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* User Avatar */}
             <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-medium">
-                {currentUser?.name?.charAt(0) || "?"}
+                {currentUser && typeof currentUser === "object" ? currentUser.name.charAt(0) : "?"}
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-[#1E293B]">
-                  {currentUser?.name || "未登录"}
+                  {currentUser && typeof currentUser === "object" ? currentUser.name : "未登录"}
                 </p>
                 <p className="text-xs text-[#94A3B8]">
-                  {currentUser?.role === "admin" ? "招聘总监" : "招聘专员"}
+                  {currentUser && typeof currentUser === "object" && currentUser.role === "admin" ? "招聘总监" : "招聘专员"}
                 </p>
               </div>
             </div>

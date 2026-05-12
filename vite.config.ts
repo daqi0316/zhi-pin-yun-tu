@@ -14,7 +14,8 @@ export default defineConfig({
     port: 3000,
   },
   optimizeDeps: {
-    exclude: ["bcryptjs", "mysql2", "jose", "cookie"],
+    exclude: ["bcryptjs", "mysql2", "jose"],
+    include: ["cookie", "react-router", "set-cookie-parser"],
     entries: ["src/main.tsx"],
   },
   resolve: {

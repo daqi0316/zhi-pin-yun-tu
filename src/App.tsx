@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router";
+import { Routes, Route, Navigate } from "react-router";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import TalentPool from "./pages/TalentPool";
@@ -12,6 +12,22 @@ import CompanyRelations from "./pages/CompanyRelations";
 import Positions from "./pages/Positions";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { trpc } from "./providers/trpc";
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { data: me, isLoading } = trpc.auth.me.useQuery();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F4F6FA]">
+        <div className="text-slate-400">加载中...</div>
+      </div>
+    );
+  }
+  if (!me) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return <Layout>{children}</Layout>;
@@ -24,81 +40,101 @@ export default function App() {
       <Route
         path="/"
         element={
-          <AppLayout>
-            <Home />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <Home />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/talent"
         element={
-          <AppLayout>
-            <TalentPool />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <TalentPool />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/channels"
         element={
-          <AppLayout>
-            <Channels />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <Channels />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/interviews"
         element={
-          <AppLayout>
-            <InterviewFlow />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <InterviewFlow />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/profiles"
         element={
-          <AppLayout>
-            <TalentProfiles />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <TalentProfiles />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/offers"
         element={
-          <AppLayout>
-            <OfferManage />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <OfferManage />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/analytics"
         element={
-          <AppLayout>
-            <Analytics />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <Analytics />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/alerts"
         element={
-          <AppLayout>
-            <AlertCenter />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <AlertCenter />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/relations"
         element={
-          <AppLayout>
-            <CompanyRelations />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <CompanyRelations />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/positions"
         element={
-          <AppLayout>
-            <Positions />
-          </AppLayout>
+          <RequireAuth>
+            <AppLayout>
+              <Positions />
+            </AppLayout>
+          </RequireAuth>
         }
       />
       <Route path="*" element={<NotFound />} />

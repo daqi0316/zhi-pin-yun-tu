@@ -289,7 +289,7 @@ export default function TalentProfiles() {
             className="h-9 px-3 bg-white border border-slate-200/60 rounded-xl text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
           >
             <option value="">全部岗位（默认评分）</option>
-            {(positionList as any[]).map((p: any) => (
+            {(positions as any[]).map((p: any) => (
               <option key={p.id} value={p.id}>
                 {p.title} · {p.company}
               </option>

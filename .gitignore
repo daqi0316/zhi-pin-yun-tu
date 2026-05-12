@@ -37,3 +37,9 @@ build/
 # Test coverage
 coverage/
 .nyc_output/
+
+# Playwright test results
+test-results/
+
+# Uploads (local file storage)
+uploads/resumes/
