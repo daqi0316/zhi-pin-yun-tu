@@ -16,6 +16,9 @@ import {
   Bell,
   ArrowRight,
   Download,
+  Upload,
+  Loader2,
+  Eye,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
@@ -53,6 +56,7 @@ interface CandidateDetail {
   location: string | null;
   salary: string | null;
   stage: string | null;
+  resumeUrl: string | null;
 }
 
 export default function TalentPool() {
@@ -65,6 +69,7 @@ export default function TalentPool() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const utils = trpc.useUtils();
   const [newCandidate, setNewCandidate] = useState({
@@ -80,6 +85,7 @@ export default function TalentPool() {
     salary: "",
     stage: "初筛",
     location: "",
+    resumeUrl: "",
   });
 
   const { data, isLoading, refetch } = trpc.candidate.list.useQuery({
@@ -142,6 +148,7 @@ export default function TalentPool() {
         salary: "",
         stage: "初筛",
         location: "",
+        resumeUrl: "",
       });
     },
   });
@@ -165,7 +172,30 @@ export default function TalentPool() {
       salary: newCandidate.salary || undefined,
       stage: newCandidate.stage || undefined,
       location: newCandidate.location || undefined,
+      resumeUrl: newCandidate.resumeUrl || undefined,
     });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload/resume", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setNewCandidate(p => ({ ...p, resumeUrl: data.url }));
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setUploading(false);
+    }
   };
 
   const getMatchColor = (score: number | null) => {
@@ -752,6 +782,20 @@ export default function TalentPool() {
                         <span className="text-[#94A3B8]">邮箱:</span>{" "}
                         {candidateDetail.email || "-"}
                       </div>
+                      {candidateDetail.resumeUrl && (
+                        <div className="flex items-center gap-2 text-[#475569]">
+                          <span className="text-[#94A3B8]">简历:</span>{" "}
+                          <a
+                            href={candidateDetail.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#2D8FF0] hover:underline flex items-center gap-1"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            查看简历
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -967,6 +1011,49 @@ export default function TalentPool() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                      简历文件
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 flex items-center gap-2 h-10 px-3.5 bg-slate-100/80 border border-dashed border-slate-300 rounded-xl text-sm text-[#94A3B8] cursor-pointer hover:bg-slate-200/60 transition-colors justify-center">
+                        {uploading ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-[#2D8FF0]" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        <span>
+                          {uploading
+                            ? "上传中..."
+                            : newCandidate.resumeUrl
+                              ? "已上传 ✓"
+                              : "点击上传简历 (PDF/DOCX/TXT)"}
+                        </span>
+                        <input
+                          type="file"
+                          accept=".pdf,.docx,.doc,.txt"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          disabled={uploading}
+                        />
+                      </label>
+                      {newCandidate.resumeUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.open(
+                              newCandidate.resumeUrl,
+                              "_blank"
+                            );
+                          }}
+                          className="h-10 w-10 flex items-center justify-center border border-slate-200 rounded-xl hover:bg-slate-50"
+                          title="预览简历"
+                        >
+                          <Eye className="w-4 h-4 text-[#2D8FF0]" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
                       所在城市

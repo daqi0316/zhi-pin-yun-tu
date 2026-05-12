@@ -5,7 +5,7 @@
 ```
 ┌──────────────────────────────────────────────────┐
 │                  前端 (React 19)                   │
-│  Vite 7 HMR Dev Server → http://localhost:3000    │
+│  Vite 7 HMR Dev Server → http://localhost:3001    │
 │  @trpc/react-query + superjson 序列化              │
 │                                                    │
 │  src/pages/  13 个页面                             │
@@ -47,6 +47,10 @@
 │   ├── notification 通知订阅管理                    │
 │   └── export     CSV数据导出                       │
 │                                                    │
+│  api/boot.ts 原生 Hono 路由:                        │
+│   ├── POST /api/upload/resume  简历文件上传        │
+│   └── GET  /api/uploads/resumes/:filename 文件预览 │
+│                                                    │
 │  api/middleware.ts:                                 │
 │   ├── publicQuery  无需登录                        │
 │   ├── authedQuery  需JWT cookie认证                │
@@ -67,7 +71,7 @@
 │  db/schema.ts 9 张表:                              │
 │   ├── users                  用户/角色             │
 │   ├── positions              岗位/JD              │
-│   ├── candidates             候选人               │
+│   ├── candidates             候选人 (含resumeUrl) │
 │   ├── workHistories          工作经历             │
 │   ├── interviews             面试记录 + BARS评分  │
 │   ├── offers                 Offer + 总包计算      │
@@ -107,6 +111,7 @@ src/            — 前端 React 源码
   hooks/        — React hooks
   providers/    — tRPC Provider
 db/             — MySQL schema、连接、种子数据
+uploads/resumes/ — 简历文件存储（.gitkeep 保留目录）
 contracts/      — 前后端共享类型、常量、错误码
 docs/           — 设计文档
 scripts/        — 开发 & CI 脚本
@@ -132,11 +137,18 @@ tasks/          — 任务追踪
     → auditLogs 表
     → AuditLog 页面可查询追溯
 
-通知推送链:
+ 通知推送链:
   alert.create / alert.autoGenerate
     → sendNotifications(alert)
     → 查询 notificationSubscriptions
     → POST webhook / 钉钉机器人
+
+简历上传链:
+  前端文件选择 (PDF/DOCX/DOC/TXT, <10MB)
+    → POST /api/upload/resume (multipart)
+    → 保存到 uploads/resumes/{uuid}.{ext}
+    → 返回 URL → 填入 candidate.resumeUrl
+    → 候选人详情页 GET /api/uploads/resumes/:filename 预览
 ```
 
 ## 测试覆盖

@@ -113,6 +113,7 @@ export const candidateRouter = createRouter({
         salary: z.string().optional(),
         stage: z.string().optional(),
         location: z.string().optional(),
+        resumeUrl: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -159,6 +160,7 @@ export const candidateRouter = createRouter({
           stage: z.string().optional(),
           location: z.string().optional(),
           notes: z.string().optional(),
+          resumeUrl: z.string().optional(),
         }),
       })
     )
