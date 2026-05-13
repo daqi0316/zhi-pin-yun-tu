@@ -11,7 +11,7 @@ import {
   positions,
 } from "../../db/schema";
 import { eq, desc, sql, like, or, and } from "drizzle-orm";
-import { calculateResumeScore, type ScoringInput } from "../scoring";
+import { calculateResumeScore, calculateIntentScore, type ScoringInput } from "../scoring";
 import { recordAudit } from "../lib/audit";
 import { sendNotifications } from "../lib/notifications";
 
@@ -137,32 +137,6 @@ export const candidateRouter = createRouter({
         changes: { name: { old: null, new: input.name } },
       });
       return created;
-  }),
-
-  getById: authedQuery.input(z.number()).query(async ({ input }) => {
-    const db = getDb();
-    const [offer] = await db
-      .select()
-      .from(offers)
-      .where(eq(offers.id, input))
-      .limit(1);
-    if (!offer) throw new Error("Offer not found");
-    const [candidate] = await db
-      .select()
-      .from(candidates)
-      .where(eq(candidates.id, offer.candidateId ?? 0))
-      .limit(1);
-    const [position] = await db
-      .select()
-      .from(positions)
-      .where(eq(positions.id, offer.positionId ?? 0))
-      .limit(1);
-    return {
-      ...offer,
-      candidateName: candidate?.name ?? "候选人",
-      candidateAvatar: candidate?.avatar ?? "",
-      positionTitle: position?.title ?? "",
-    };
   }),
 
   update: authedQuery
@@ -672,6 +646,32 @@ export const offerRouter = createRouter({
       candidateEmail: r.candidateEmail ?? "",
       positionTitle: r.positionTitle ?? "",
     }));
+  }),
+
+  getById: authedQuery.input(z.number()).query(async ({ input }) => {
+    const db = getDb();
+    const [offer] = await db
+      .select()
+      .from(offers)
+      .where(eq(offers.id, input))
+      .limit(1);
+    if (!offer) throw new Error("Offer not found");
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, offer.candidateId ?? 0))
+      .limit(1);
+    const [position] = await db
+      .select()
+      .from(positions)
+      .where(eq(positions.id, offer.positionId ?? 0))
+      .limit(1);
+    return {
+      ...offer,
+      candidateName: candidate?.name ?? "候选人",
+      candidateAvatar: candidate?.avatar ?? "",
+      positionTitle: position?.title ?? "",
+    };
   }),
 
   update: authedQuery

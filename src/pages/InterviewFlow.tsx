@@ -261,7 +261,8 @@ function BarsResultSummary({ scores }: { scores: Record<string, number> }) {
 }
 
 export default function InterviewFlow() {
-  const { data: interviewList = [], refetch } = trpc.interview.list.useQuery();
+  const { data: interviewData, refetch } = trpc.interview.list.useQuery();
+  const interviewList = interviewData?.items ?? [];
   const updateScoreMutation = trpc.interview.updateScore.useMutation();
   const generateFeedbackMutation =
     trpc.ai.interview.generateFeedback.useMutation();
