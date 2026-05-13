@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileCheck,
   Clock,
@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useSearchParams } from "react-router";
 
 const statusConfig: Record<
   string,
@@ -32,6 +33,16 @@ export default function OfferManage() {
   const [selectedOffer, setSelectedOffer] = useState<any | null>(null);
   const [showNegotiate, setShowNegotiate] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlCandidateId = searchParams.get("candidateId") || "";
+
+  useEffect(() => {
+    if (urlCandidateId) {
+      setNewOffer(prev => ({ ...prev, candidateId: urlCandidateId }));
+      setShowCreate(true);
+    }
+  }, [urlCandidateId]);
   const [newOffer, setNewOffer] = useState({
     candidateId: "",
     positionId: "",
@@ -180,7 +191,7 @@ export default function OfferManage() {
       </div>
 
       <div className="flex items-center gap-2">
-        {["全部", "draft", "sent", "negotiating", "accepted", "rejected"].map(
+        {["全部", "draft", "sent", "negotiating", "accepted", "rejected", "expired"].map(
           s => (
             <button
               key={s}
@@ -207,11 +218,17 @@ export default function OfferManage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={offer.candidateAvatar || "/images/avatar1.jpg"}
-                    alt={offer.candidateName || ""}
-                    className="w-11 h-11 rounded-xl object-cover"
-                  />
+                  {offer.candidateAvatar ? (
+                    <img
+                      src={offer.candidateAvatar}
+                      alt={offer.candidateName || ""}
+                      className="w-11 h-11 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-xl bg-[#2D8FF0] flex items-center justify-center text-white text-sm font-semibold">
+                      {(offer.candidateName || "?").charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <h3 className="font-semibold text-sm text-[#1E293B]">
                       {offer.candidateName || "候选人"}
@@ -375,11 +392,17 @@ export default function OfferManage() {
                 Offer谈判
               </h2>
               <div className="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded-xl">
-                <img
-                  src={selectedOffer?.candidateAvatar || "/images/avatar1.jpg"}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                {selectedOffer?.candidateAvatar ? (
+                  <img
+                    src={selectedOffer.candidateAvatar}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-[#2D8FF0] flex items-center justify-center text-white text-sm font-semibold">
+                    {(selectedOffer?.candidateName || "?").charAt(0)}
+                  </div>
+                )}
                 <div>
                   <div className="font-medium text-sm text-[#1E293B]">
                     {selectedOffer?.candidateName || "候选人"}

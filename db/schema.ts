@@ -72,7 +72,7 @@ export type InsertCandidate = typeof candidates.$inferInsert;
 
 export const workHistories = mysqlTable("workHistories", {
   id: int("id").primaryKey().autoincrement(),
-  candidateId: int("candidateId").notNull().references(() => candidates.id),
+  candidateId: int("candidateId").notNull().references(() => candidates.id, { onDelete: "cascade" }),
   company: varchar("company", { length: 255 }).notNull(),
   position: varchar("position", { length: 255 }),
   startDate: varchar("startDate", { length: 50 }),
@@ -85,8 +85,8 @@ export type WorkHistory = typeof workHistories.$inferSelect;
 
 export const interviews = mysqlTable("interviews", {
   id: int("id").primaryKey().autoincrement(),
-  candidateId: int("candidateId").notNull().references(() => candidates.id),
-  positionId: int("positionId").references(() => positions.id),
+  candidateId: int("candidateId").notNull().references(() => candidates.id, { onDelete: "cascade" }),
+  positionId: int("positionId").references(() => positions.id, { onDelete: "set null" }),
   stage: varchar("stage", { length: 100 }),
   interviewer: varchar("interviewer", { length: 255 }),
   scheduledTime: varchar("scheduledTime", { length: 50 }),
@@ -107,8 +107,8 @@ export type InsertInterview = typeof interviews.$inferInsert;
 
 export const offers = mysqlTable("offers", {
   id: int("id").primaryKey().autoincrement(),
-  candidateId: int("candidateId").notNull().references(() => candidates.id),
-  positionId: int("positionId").references(() => positions.id),
+  candidateId: int("candidateId").notNull().references(() => candidates.id, { onDelete: "cascade" }),
+  positionId: int("positionId").references(() => positions.id, { onDelete: "set null" }),
   baseSalary: int("baseSalary"),
   bonus: double("bonus"),
   stock: int("stock"),
@@ -147,7 +147,7 @@ export const alerts = mysqlTable("alerts", {
   type: varchar("type", { length: 50 }),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  candidateId: int("candidateId").references(() => candidates.id),
+  candidateId: int("candidateId").references(() => candidates.id, { onDelete: "set null" }),
   isRead: int("isRead").default(0),
   action: varchar("action", { length: 100 }),
   createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),

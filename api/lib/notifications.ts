@@ -1,5 +1,6 @@
 import { getDb } from "../../db/connection";
 import { notificationSubscriptions } from "../../db/schema";
+import { eq } from "drizzle-orm";
 
 interface AlertData {
   id: number;
@@ -15,12 +16,9 @@ export async function sendNotifications(alert: AlertData) {
   const subs = await db
     .select()
     .from(notificationSubscriptions)
-    .where(
-      // drizzle requires proper comparison
-      undefined as any
-    );
+    .where(eq(notificationSubscriptions.enabled, 1));
 
-  const enabled = subs.filter(s => s.enabled === 1);
+  const enabled = subs;
 
   for (const sub of enabled) {
     try {
@@ -56,8 +54,8 @@ export async function sendNotifications(alert: AlertData) {
           }),
         });
       }
-    } catch {
-      // silently ignore notification failures
+    } catch (e) {
+      console.error(`Notification webhook (${sub.channel}) failed:`, e);
     }
   }
 }

@@ -6,7 +6,7 @@
 
 ---
 
-## Sprint 1-7 已完成 (32/32 任务)
+## Sprint 1-8 已完成 (34/34 任务)
 
 ### Sprint 1 — CRUD 补全 ✅
 - [x] 候选人新建表单 + 编辑 + 删除
@@ -43,7 +43,7 @@
 - [x] AI Copilot 对接 DeepSeek (api/routers/ai.ts chat.send + Layout Copilot面板)
 - [x] AI 面试评语生成 (基于 BARS 分数自动生成 + InterviewFlow 按钮)
 
-### Sprint 7 — 基础设施增强 ✅ (2026-05-12)
+### Sprint 7 — 基础设施增强 ✅
 - [x] API 集成测试: 109 tests / 4 files (BARS评分/Offer总包/仪表盘KPI/预警过滤/漏斗/岗位效率)
 - [x] 审计日志: auditLogs表 + recordAudit + auditLogRouter + 前端AuditLog页面 + 全CRUD追踪
 - [x] 候选人自动匹配触发器: position.update 变更时自动重算所有候选人匹配分
@@ -52,26 +52,32 @@
 - [x] 面试排期日历: interview.calendar端点 + InterviewCalendar组件 + 看板/日历切换
 - [x] 移动端响应式适配: 汉堡菜单 + 侧边栏overlay + 响应式间距
 
+### Sprint 8 — 简历管理 ✅ (2026-05-13)
+- [x] 简历上传: POST /api/upload/resume multipart (PDF/DOCX/DOC/TXT, <10MB)
+- [x] 简历预览: GET /api/uploads/resumes/:filename 文件服务
+- [x] 前端集成: TalentPool 新建表单上传区 + 候选人详情简历链接
+
 ---
 
 ## 技术备忘
 
-- **端口**: 3001（vite.config.ts + api/boot.ts + .env，3000被harness-engineering占用）
-- **APP_URL**: http://localhost:3000（通知链接用，生产需改为实际域名）
+- **端口**: 3001（vite.config.ts + api/boot.ts + .env）
+- **APP_URL**: http://localhost:3001（通知链接用，生产需改为实际域名）
 - **测试**: `npx vitest run` — 109 tests, 4 files, 零失败
 - **类型检查**: `npx tsc --noEmit` — 零错误
 - **DB**: MySQL 8 本地运行，用户 `root:723319`，库名 `zhypx`
 - **Docker**: `docker compose up -d` 启动 MySQL
-- **关键文件**: `api/router.ts` (17个子路由), `api/scoring.ts` (评分引擎), `db/schema.ts` (9张表)
+- **关键文件**: `api/router.ts` (17个子路由), `api/boot.ts` (4条原生路由), `api/scoring.ts` (评分引擎), `db/schema.ts` (10张表)
 - **DEEPSEEK_API_KEY**: 需在 .env 中配置后方可启用 AI Copilot 和 AI 面试评语功能
 
 ## 当前系统规模
 
 | 维度 | 数量 |
 |------|------|
-| API 子路由 | 17 个 |
-| 数据库表 | 9 张 |
+| API tRPC 子路由 | 17 个 |
+| API 原生路由 | 4 条 (upload/resume, static serve, catch-all) |
+| 数据库表 | 10 张 |
 | 前端页面 | 13 个 |
 | 测试文件 | 4 个 (109 tests) |
 | shadcn/ui 组件 | 40+ |
-| Sprint 总数 | 7 个 (32 tasks) |
+| Sprint 总数 | 8 个 (34 tasks) |

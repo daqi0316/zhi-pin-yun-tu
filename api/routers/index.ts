@@ -137,7 +137,33 @@ export const candidateRouter = createRouter({
         changes: { name: { old: null, new: input.name } },
       });
       return created;
-    }),
+  }),
+
+  getById: authedQuery.input(z.number()).query(async ({ input }) => {
+    const db = getDb();
+    const [offer] = await db
+      .select()
+      .from(offers)
+      .where(eq(offers.id, input))
+      .limit(1);
+    if (!offer) throw new Error("Offer not found");
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, offer.candidateId ?? 0))
+      .limit(1);
+    const [position] = await db
+      .select()
+      .from(positions)
+      .where(eq(positions.id, offer.positionId ?? 0))
+      .limit(1);
+    return {
+      ...offer,
+      candidateName: candidate?.name ?? "候选人",
+      candidateAvatar: candidate?.avatar ?? "",
+      positionTitle: position?.title ?? "",
+    };
+  }),
 
   update: authedQuery
     .input(
@@ -321,14 +347,60 @@ export const candidateRouter = createRouter({
 
 // ─── Interviews ───
 export const interviewRouter = createRouter({
-  list: authedQuery.query(async () => {
-    const db = getDb();
-    const result = await db
-      .select()
-      .from(interviews)
-      .orderBy(desc(interviews.scheduledTime));
-    return result;
-  }),
+  list: authedQuery
+    .input(
+      z
+        .object({
+          status: z.string().optional(),
+          stage: z.string().optional(),
+          search: z.string().optional(),
+          page: z.number().default(1),
+          pageSize: z.number().default(50),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const conditions = [];
+      if (input?.status && input.status !== "全部") {
+        conditions.push(eq(interviews.status, input.status));
+      }
+      if (input?.stage && input.stage !== "全部") {
+        conditions.push(eq(interviews.stage, input.stage));
+      }
+      if (input?.search) {
+        conditions.push(
+          or(
+            like(candidates.name, `%${input.search}%`),
+            like(interviews.interviewer, `%${input.search}%`),
+            like(interviews.stage, `%${input.search}%`)
+          )
+        );
+      }
+      const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+      const result = await db
+        .select()
+        .from(interviews)
+        .leftJoin(candidates, eq(interviews.candidateId, candidates.id))
+        .where(where)
+        .orderBy(desc(interviews.scheduledTime))
+        .limit(input?.pageSize ?? 50)
+        .offset(((input?.page ?? 1) - 1) * (input?.pageSize ?? 50));
+
+      const totalResult = await db
+        .select({ count: sql<number>`cast(count(*) as unsigned)` })
+        .from(interviews)
+        .where(where);
+      const total = totalResult[0]?.count ?? 0;
+
+      return {
+        items: result,
+        total,
+        page: input?.page ?? 1,
+        pageSize: input?.pageSize ?? 50,
+      };
+    }),
 
   getByCandidateId: authedQuery.input(z.number()).query(async ({ input }) => {
     const db = getDb();
@@ -443,8 +515,8 @@ export const interviewRouter = createRouter({
               .set({ matchScore: result.total })
               .where(eq(candidates.id, candidate.id));
           }
-        } catch {
-          // silently ignore rescore errors
+        } catch (e) {
+          console.error("Failed to rescore after interview update:", e);
         }
       }
 
@@ -579,7 +651,27 @@ export const interviewRouter = createRouter({
 export const offerRouter = createRouter({
   list: authedQuery.query(async () => {
     const db = getDb();
-    return await db.select().from(offers).orderBy(desc(offers.createdAt));
+    const rows = await db
+      .select({
+        offer: offers,
+        candidateName: candidates.name,
+        candidateAvatar: candidates.avatar,
+        candidatePhone: candidates.phone,
+        candidateEmail: candidates.email,
+        positionTitle: positions.title,
+      })
+      .from(offers)
+      .leftJoin(candidates, eq(offers.candidateId, candidates.id))
+      .leftJoin(positions, eq(offers.positionId, positions.id))
+      .orderBy(desc(offers.createdAt));
+    return rows.map(r => ({
+      ...r.offer,
+      candidateName: r.candidateName ?? "候选人",
+      candidateAvatar: r.candidateAvatar ?? "/images/avatar1.jpg",
+      candidatePhone: r.candidatePhone ?? "",
+      candidateEmail: r.candidateEmail ?? "",
+      positionTitle: r.positionTitle ?? "",
+    }));
   }),
 
   update: authedQuery
@@ -1058,7 +1150,9 @@ export const alertRouter = createRouter({
             action: a.action,
           });
         }
-      } catch {}
+      } catch (e) {
+        console.error("Failed to send auto-generated alert notifications:", e);
+      }
     })();
 
     return { generated: generated.length, items: generated };

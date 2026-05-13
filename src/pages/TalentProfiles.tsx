@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useNavigate } from "react-router";
 
 // ─── 雷达图组件 ───
 
@@ -194,6 +195,7 @@ const levelColors: Record<string, { bg: string; text: string }> = {
 // ─── 主页面 ───
 
 export default function TalentProfiles() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedPositionId, setSelectedPositionId] = useState<number | null>(
@@ -621,7 +623,12 @@ export default function TalentProfiles() {
 
               {/* Actions */}
               <div className="flex gap-3">
-                <button className="h-11 px-6 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    navigate(`/offers?candidateId=${selectedId}`)
+                  }
+                  className="h-11 px-6 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors flex items-center gap-2"
+                >
                   <Send className="w-4 h-4" />
                   发送 Offer
                 </button>

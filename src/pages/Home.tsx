@@ -209,11 +209,17 @@ export default function Home() {
                   className="px-6 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors cursor-pointer"
                   onClick={() => navigate("/profiles")}
                 >
-                  <img
-                    src={c.avatar || "/images/avatar1.jpg"}
-                    alt={c.name}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10"
-                  />
+                  {c.avatar ? (
+                    <img
+                      src={c.avatar}
+                      alt={c.name}
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[#2D8FF0] ring-2 ring-white/10 flex items-center justify-center text-white text-sm font-semibold">
+                      {c.name?.charAt(0) || "?"}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm text-white">

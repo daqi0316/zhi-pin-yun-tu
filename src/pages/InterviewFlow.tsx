@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Clock,
   CheckCircle2,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { InterviewCalendar } from "@/components/InterviewCalendar";
+import { useSearchParams } from "react-router";
 
 const stageColors: Record<
   string,
@@ -273,6 +274,9 @@ export default function InterviewFlow() {
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlCandidateId = searchParams.get("candidateId") || "";
+
   const { data: calendarData } = trpc.interview.calendar.useQuery({
     year: calYear,
     month: calMonth,
@@ -287,7 +291,12 @@ export default function InterviewFlow() {
     type: "视频",
   });
 
-  const createMutation = trpc.interview.create.useMutation({
+  useEffect(() => {
+    if (urlCandidateId) {
+      setNewInterview(prev => ({ ...prev, candidateId: urlCandidateId }));
+      setShowCreate(true);
+    }
+  }, [urlCandidateId]);
     onSuccess: () => {
       refetch();
       setShowCreate(false);

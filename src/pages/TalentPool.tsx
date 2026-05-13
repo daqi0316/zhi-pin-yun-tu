@@ -21,6 +21,7 @@ import {
   Eye,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useNavigate } from "react-router";
 
 const statusOptions = [
   "全部",
@@ -70,8 +71,11 @@ export default function TalentPool() {
   const [showCreate, setShowCreate] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   const utils = trpc.useUtils();
+  const navigate = useNavigate();
   const [newCandidate, setNewCandidate] = useState({
     name: "",
     phone: "",
@@ -85,6 +89,7 @@ export default function TalentPool() {
     salary: "",
     stage: "初筛",
     location: "",
+    notes: "",
     resumeUrl: "",
   });
 
@@ -93,9 +98,15 @@ export default function TalentPool() {
     status: statusFilter !== "全部" ? statusFilter : undefined,
     stage: stageFilter !== "全部" ? stageFilter : undefined,
     source: sourceFilter !== "全部" ? sourceFilter : undefined,
+    page,
+    pageSize,
   });
 
   const candidates = data?.items ?? [];
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, stageFilter, sourceFilter]);
 
   useEffect(() => {
     if (!exporting) return;
@@ -123,6 +134,17 @@ export default function TalentPool() {
     { enabled: !!selectedId }
   );
 
+  const { data: currentUser } = trpc.auth.me.useQuery();
+  const isAdmin = currentUser?.role === "admin";
+
+  const deleteMutation = trpc.candidate.delete.useMutation({
+    onSuccess: () => {
+      setSelectedId(null);
+      setSelectedCandidate(null);
+      refetch();
+    },
+  });
+
   const timelineIcons: Record<string, typeof Clock> = {
     candidate: UserPlus,
     interview: FileText,
@@ -148,6 +170,7 @@ export default function TalentPool() {
         salary: "",
         stage: "初筛",
         location: "",
+        notes: "",
         resumeUrl: "",
       });
     },
@@ -172,6 +195,7 @@ export default function TalentPool() {
       salary: newCandidate.salary || undefined,
       stage: newCandidate.stage || undefined,
       location: newCandidate.location || undefined,
+      notes: newCandidate.notes || undefined,
       resumeUrl: newCandidate.resumeUrl || undefined,
     });
   };
@@ -192,7 +216,7 @@ export default function TalentPool() {
         setNewCandidate(p => ({ ...p, resumeUrl: data.url }));
       }
     } catch {
-      // silently fail
+      alert("文件上传失败，请检查文件格式或网络连接");
     } finally {
       setUploading(false);
     }
@@ -432,6 +456,58 @@ export default function TalentPool() {
               </tbody>
             </table>
           </div>
+          {data && (data.total ?? 0) > pageSize && (
+            <div className="flex items-center justify-between px-1 pt-4">
+              <span className="text-sm text-[#94A3B8]">
+                第 {data.page ?? page} 页，共 {Math.ceil((data.total ?? 0) / pageSize)} 页
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-sm text-[#475569] hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  &lt;
+                </button>
+                {Array.from(
+                  { length: Math.min(5, Math.ceil((data.total ?? 0) / pageSize)) },
+                  (_, i) => {
+                    const totalPages = Math.ceil((data.total ?? 0) / pageSize);
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`h-8 w-8 rounded-lg text-sm font-medium transition-colors ${
+                          pageNum === page
+                            ? "bg-[#2D8FF0] text-white"
+                            : "border border-slate-200 text-[#475569] hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+                )}
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page >= Math.ceil((data.total ?? 0) / pageSize)}
+                  className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-sm text-[#475569] hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  &gt;
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -451,15 +527,32 @@ export default function TalentPool() {
                 <h2 className="text-lg font-semibold text-[#1E293B]">
                   候选人详情
                 </h2>
-                <button
-                  onClick={() => {
-                    setSelectedId(null);
-                    setSelectedCandidate(null);
-                  }}
-                  className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors text-slate-400"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm(`确认删除候选人 ${candidateDetail.name}？此操作不可恢复。`)
+                        ) {
+                          deleteMutation.mutate(selectedId!);
+                        }
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="h-8 px-3 bg-red-50 text-red-500 border border-red-200 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+                    >
+                      {deleteMutation.isPending ? "删除中..." : "删除"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedId(null);
+                      setSelectedCandidate(null);
+                    }}
+                    className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors text-slate-400"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {!candidateDetail ? (
@@ -585,6 +678,17 @@ export default function TalentPool() {
                       ))}
                     </div>
                   </div>
+
+                  {candidateDetail.notes && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-[#1E293B] mb-2">
+                        备注
+                      </h4>
+                      <p className="text-sm text-[#475569] bg-slate-50 rounded-xl p-3 leading-relaxed">
+                        {candidateDetail.notes}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Status Timeline */}
                   <div className="mb-6">
@@ -800,7 +904,12 @@ export default function TalentPool() {
                   </div>
 
                   <div className="flex gap-3">
-                    <button className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors">
+                    <button
+                      onClick={() =>
+                        navigate(`/interviews?candidateId=${selectedId}`)
+                      }
+                      className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors"
+                    >
                       安排面试
                     </button>
                     <button className="flex-1 h-10 border border-slate-200 text-[#475569] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
@@ -1092,6 +1201,24 @@ export default function TalentPool() {
                     </select>
                   </div>
                 </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                  备注
+                </label>
+                <textarea
+                  value={newCandidate.notes}
+                  onChange={e =>
+                    setNewCandidate({
+                      ...newCandidate,
+                      notes: e.target.value,
+                    })
+                  }
+                  placeholder="添加候选人备注信息..."
+                  rows={3}
+                  className="w-full px-3.5 py-2 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20 resize-none"
+                />
               </div>
 
               <div className="flex gap-3 mt-6">

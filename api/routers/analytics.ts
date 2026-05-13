@@ -80,7 +80,7 @@ export const analyticsRouter = createRouter({
           }).length;
 
           buckets.push({
-            label: `W${i + 1} (${wsStr.slice(5)})`,
+            label: `${now.getFullYear()} W${i + 1} (${wsStr.slice(5)})`,
             candidates: weekCandidates,
             interviews: weekInterviews,
             offers: weekOffers,
@@ -157,23 +157,32 @@ export const analyticsRouter = createRouter({
     const allOffers = await db.select().from(offers);
 
     return allPositions.map(pos => {
+      const posInterviewIds = allInterviews
+        .filter(iv => iv.positionId === pos.id)
+        .map(iv => iv.candidateId);
+      const posOfferIds = allOffers
+        .filter(o => o.positionId === pos.id)
+        .map(o => o.candidateId);
+      const associatedCandidateIds = new Set([
+        ...posInterviewIds,
+        ...posOfferIds,
+        ...allInterviews
+          .filter(iv => iv.positionId === pos.id)
+          .map(iv => iv.candidateId),
+      ]);
       const posCandidates = allCandidates.filter(
-        c => c.position?.includes(pos.title) || false
+        c =>
+          associatedCandidateIds.has(c.id) ||
+          (c.position ?? "").includes(pos.title ?? "")
       );
       const matchedCandidates = posCandidates.filter(
         c => (c.matchScore ?? 0) >= 60
       );
       const posInterviews = allInterviews.filter(
-        iv =>
-          iv.positionId === pos.id ||
-          (posCandidates.length > 0 &&
-            posCandidates.some(c => c.id === iv.candidateId))
+        iv => iv.positionId === pos.id
       );
       const posOffers = allOffers.filter(
-        o =>
-          o.positionId === pos.id ||
-          (posCandidates.length > 0 &&
-            posCandidates.some(c => c.id === o.candidateId))
+        o => o.positionId === pos.id
       );
 
       const conversionRate =
