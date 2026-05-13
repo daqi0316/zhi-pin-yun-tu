@@ -40,6 +40,10 @@ export async function createContext(
       return { req: opts.req, resHeaders: opts.resHeaders };
     }
 
+    if (user.status === "disabled") {
+      return { req: opts.req, resHeaders: opts.resHeaders };
+    }
+
     return {
       req: opts.req,
       resHeaders: opts.resHeaders,

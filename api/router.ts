@@ -23,6 +23,7 @@ import { aiRouter } from "./routers/ai";
 import { auditLogRouter } from "./routers/audit";
 import { notificationRouter } from "./routers/notifications";
 import { exportRouter } from "./routers/export";
+import { usersRouter } from "./routers/users";
 import { loginLocal } from "./auth-local";
 
 export const appRouter = createRouter({
@@ -82,6 +83,7 @@ export const appRouter = createRouter({
   auditLog: auditLogRouter,
   notification: notificationRouter,
   export: exportRouter,
+  users: usersRouter,
 });
 
 export type AppRouter = typeof appRouter;

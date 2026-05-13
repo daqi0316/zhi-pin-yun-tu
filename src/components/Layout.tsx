@@ -23,6 +23,8 @@ import {
   Bot,
   Shield,
   Menu,
+  Key,
+  UserCog,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
@@ -31,7 +33,12 @@ type ChatMessage = {
   content: string;
 };
 
-const navItems = [
+const navItems: Array<{
+  key: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  adminOnly?: boolean;
+}> = [
   { key: "/", label: "总览", icon: LayoutDashboard },
   { key: "/talent", label: "人才库", icon: Users },
   { key: "/relations", label: "公司关联", icon: GitBranch },
@@ -43,6 +50,7 @@ const navItems = [
   { key: "/analytics", label: "数据分析", icon: BarChart3 },
   { key: "/alerts", label: "预警监控", icon: ShieldAlert },
   { key: "/audit", label: "操作日志", icon: Shield },
+  { key: "/users", label: "用户管理", icon: UserCog, adminOnly: true },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -54,6 +62,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [copilotMsg, setCopilotMsg] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [oldPwd, setOldPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const aiChatMutation = trpc.ai.chat.send.useMutation({
     onSuccess: data => {
@@ -90,6 +103,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       searchResults.interviews.length > 0);
   const activeKey = location.pathname;
   const { data: currentUser } = trpc.auth.me.useQuery();
+  const isAdmin =
+    currentUser &&
+    typeof currentUser === "object" &&
+    (currentUser as any).role === "admin";
+  const changePwdMutation = trpc.users.changePassword.useMutation({
+    onSuccess: () => {
+      setShowChangePwd(false);
+      setOldPwd("");
+      setNewPwd("");
+      alert("密码修改成功");
+    },
+    onError: (e: any) => {
+      alert(e.message || "密码修改失败");
+    },
+  });
   const { data: alertsData } = trpc.alert.list.useQuery(undefined, {
     staleTime: 30000,
   });
@@ -105,6 +133,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const handleCopilotSend = (msg: string) => {
     if (!msg.trim() || aiChatMutation.isPending) return;
@@ -160,7 +201,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-          {navItems.map(item => {
+          {navItems
+            .filter(item => !item.adminOnly || isAdmin)
+            .map(item => {
             const isActive = activeKey === item.key;
             const Icon = item.icon;
             return (
@@ -377,31 +420,67 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* User Avatar */}
-            <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-medium">
-                {currentUser && typeof currentUser === "object"
-                  ? currentUser.name.charAt(0)
-                  : "?"}
-              </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium text-[#1E293B]">
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 pl-3 border-l border-slate-200 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-medium">
                   {currentUser && typeof currentUser === "object"
-                    ? currentUser.name
-                    : "未登录"}
-                </p>
-                <p className="text-xs text-[#94A3B8]">
-                  {currentUser &&
-                  typeof currentUser === "object" &&
-                  currentUser.role === "admin"
-                    ? "招聘总监"
-                    : "招聘专员"}
-                </p>
-              </div>
+                    ? currentUser.name.charAt(0)
+                    : "?"}
+                </div>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium text-[#1E293B]">
+                    {currentUser && typeof currentUser === "object"
+                      ? currentUser.name
+                      : "未登录"}
+                  </p>
+                  <p className="text-xs text-[#94A3B8]">
+                    {currentUser &&
+                    typeof currentUser === "object" &&
+                    (currentUser as any).role === "admin"
+                      ? "管理员"
+                      : (currentUser as any)?.role === "hr"
+                        ? "HR"
+                        : (currentUser as any)?.role === "面试官"
+                          ? "面试官"
+                          : (currentUser as any)?.role === "部门主管"
+                            ? "部门主管"
+                            : "只读"}
+                  </p>
+                </div>
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-2xl border border-slate-200/60 py-1.5 z-50">
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      setShowChangePwd(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#475569] hover:bg-slate-50 transition-colors"
+                  >
+                    <Key className="w-4 h-4" />
+                    修改密码
+                  </button>
+                  <div className="border-t border-slate-100 my-1" />
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      logoutMutation.mutate();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    退出登录
+                  </button>
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => logoutMutation.mutate()}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors md:hidden"
               title="退出登录"
             >
               <LogOut className="w-4 h-4 text-slate-400" />
@@ -551,6 +630,66 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Sparkles className="w-3 h-3 text-white" />
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showChangePwd && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setShowChangePwd(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-[380px]">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-semibold text-[#1E293B]">修改密码</h2>
+                <button
+                  onClick={() => setShowChangePwd(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">原密码</label>
+                  <input
+                    type="password"
+                    value={oldPwd}
+                    onChange={e => setOldPwd(e.target.value)}
+                    placeholder="输入当前密码"
+                    className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">新密码</label>
+                  <input
+                    type="password"
+                    value={newPwd}
+                    onChange={e => setNewPwd(e.target.value)}
+                    placeholder="输入新密码，至少4位"
+                    className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    if (!oldPwd) { alert("请输入原密码"); return; }
+                    if (newPwd.length < 4) { alert("新密码至少4位"); return; }
+                    changePwdMutation.mutate({ oldPassword: oldPwd, newPassword: newPwd });
+                  }}
+                  disabled={changePwdMutation.isPending}
+                  className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors disabled:opacity-40"
+                >
+                  {changePwdMutation.isPending ? "修改中..." : "确认修改"}
+                </button>
+                <button
+                  onClick={() => setShowChangePwd(false)}
+                  className="flex-1 h-10 border border-slate-200 text-[#475569] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
+                >
+                  取消
+                </button>
+              </div>
             </div>
           </div>
         </div>

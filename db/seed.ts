@@ -26,6 +26,52 @@ async function seed() {
     role: "admin",
   });
 
+  await db.insert(schema.roles).values([
+    { name: "admin", label: "管理员" },
+    { name: "hr", label: "HR" },
+    { name: "面试官", label: "面试官" },
+    { name: "部门主管", label: "部门主管" },
+    { name: "readonly", label: "只读" },
+  ]);
+
+  await db.insert(schema.userRoles).values([
+    { userId: 1, roleId: 1 },
+  ]);
+
+  await db.insert(schema.users).values([
+    {
+      username: "hr_zhao",
+      password: hashSync("hr123", 10),
+      name: "赵敏",
+      role: "hr",
+    },
+    {
+      username: "iv_li",
+      password: hashSync("iv123", 10),
+      name: "李总",
+      role: "面试官",
+    },
+    {
+      username: "dept_wang",
+      password: hashSync("dept123", 10),
+      name: "王主管",
+      role: "部门主管",
+    },
+    {
+      username: "guest",
+      password: hashSync("guest123", 10),
+      name: "访客",
+      role: "readonly",
+    },
+  ]);
+
+  await db.insert(schema.userRoles).values([
+    { userId: 2, roleId: 2 },
+    { userId: 3, roleId: 3 },
+    { userId: 4, roleId: 4 },
+    { userId: 5, roleId: 5 },
+  ]);
+
   const candidates = [
     { name: "张明远", avatar: "/images/avatar1.jpg", phone: "138****1234", email: "zhangmy@email.com", location: "杭州", position: "高级Java工程师", company: "字节跳动", experience: 8, education: "硕士 · 浙江大学", skills: JSON.stringify(["Java", "Spring Cloud", "Redis", "MySQL", "Kafka"]), status: "active", source: "猎头推荐", salary: "45-60K", matchScore: 96, intentScore: 85, stage: "offer阶段" },
     { name: "李思涵", avatar: "/images/avatar2.jpg", phone: "139****5678", email: "lish@email.com", location: "上海", position: "产品经理", company: "阿里巴巴", experience: 5, education: "本科 · 复旦大学", skills: JSON.stringify(["产品设计", "数据分析", "Axure", "用户研究", "A/B测试"]), status: "active", source: "内推", salary: "35-50K", matchScore: 92, intentScore: 92, stage: "终面" },

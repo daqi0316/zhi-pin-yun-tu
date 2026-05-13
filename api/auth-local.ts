@@ -39,6 +39,10 @@ export async function loginLocal(
     throw new Error("用户名或密码错误");
   }
 
+  if (user.status === "disabled") {
+    throw new Error("账号已被禁用，请联系管理员");
+  }
+
   // 签发 session token
   const token = await signSessionToken({
     unionId: String(user.id),

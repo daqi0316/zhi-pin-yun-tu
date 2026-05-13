@@ -14,11 +14,30 @@ export const users = mysqlTable("users", {
   password: varchar("password", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }),
   role: varchar("role", { length: 20 }).default("user").notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
   createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  updatedAt: datetime("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+export const roles = mysqlTable("roles", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 50 }).notNull().unique(),
+  label: varchar("label", { length: 100 }).notNull(),
+  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+});
+
+export type Role = typeof roles.$inferSelect;
+
+export const userRoles = mysqlTable("userRoles", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  roleId: int("roleId").notNull().references(() => roles.id, { onDelete: "cascade" }),
+});
+
+export type UserRole = typeof userRoles.$inferSelect;
 
 export const positions = mysqlTable("positions", {
   id: int("id").primaryKey().autoincrement(),

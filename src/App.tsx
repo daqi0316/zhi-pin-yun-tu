@@ -11,6 +11,7 @@ import AlertCenter from "./pages/AlertCenter";
 import CompanyRelations from "./pages/CompanyRelations";
 import Positions from "./pages/Positions";
 import AuditLog from "./pages/AuditLog";
+import UserManage from "./pages/UserManage";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { trpc } from "./providers/trpc";
@@ -144,6 +145,16 @@ export default function App() {
           <RequireAuth>
             <AppLayout>
               <AuditLog />
+            </AppLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <RequireAuth>
+            <AppLayout>
+              <UserManage />
             </AppLayout>
           </RequireAuth>
         }
