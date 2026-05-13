@@ -3,13 +3,19 @@ import path from "path"
 const __dirname = import.meta.dirname
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] }),
-    inspectAttr(), react()],
+export default defineConfig(async ({ mode }) => {
+  const devServerPlugin = devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] })
+  const plugins: any[] = [devServerPlugin, react()]
+
+  if (mode === "development") {
+    const { inspectAttr } = await import("kimi-plugin-inspect-react")
+    plugins.splice(1, 0, inspectAttr())
+  }
+
+  return {
+  plugins,
   server: {
     port: 3001,
   },
@@ -31,4 +37,5 @@ export default defineConfig({
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
+  };
 });

@@ -297,6 +297,8 @@ export default function InterviewFlow() {
       setShowCreate(true);
     }
   }, [urlCandidateId]);
+
+  const createMutation = trpc.interview.create.useMutation({
     onSuccess: () => {
       refetch();
       setShowCreate(false);

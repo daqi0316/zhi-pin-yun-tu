@@ -37,7 +37,7 @@ const actionConfig: Record<
   delete: { label: "删除", color: "#FF5A65", bg: "#FEE2E2" },
 };
 
-export function AuditLog() {
+export default function AuditLog() {
   const [entityFilter, setEntityFilter] = useState("");
   const [page, setPage] = useState(1);
 
