@@ -11,7 +11,7 @@ export async function signSessionToken(
   return new jose.SignJWT(payload)
     .setProtectedHeader({ alg: JWT_ALG })
     .setIssuedAt()
-    .setExpirationTime("1 year")
+    .setExpirationTime("7d") // TODO: 实现 Refresh Token 机制，缩短至 15 分钟 access token + refresh token
     .sign(secret);
 }
 

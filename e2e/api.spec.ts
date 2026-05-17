@@ -2,10 +2,12 @@ import { test, expect } from "@playwright/test";
 
 const BASE = "/api/trpc";
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
+
 test.describe("智聘云图 — API/tRPC 接口测试", () => {
   async function login(request: any) {
     const loginRes = await request.post(`${BASE}/auth.login`, {
-      data: { json: { username: "admin", password: "admin123" } },
+      data: { json: { username: "admin", password: ADMIN_PASSWORD } },
       headers: { "Content-Type": "application/json" },
     });
     const setCookie = loginRes.headers()["set-cookie"];
@@ -22,7 +24,7 @@ test.describe("智聘云图 — API/tRPC 接口测试", () => {
 
   test("登录接口返回用户信息", async ({ request }) => {
     const res = await request.post(`${BASE}/auth.login`, {
-      data: { json: { username: "admin", password: "admin123" } },
+      data: { json: { username: "admin", password: ADMIN_PASSWORD } },
       headers: { "Content-Type": "application/json" },
     });
     const body = await res.json();

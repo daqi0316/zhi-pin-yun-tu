@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Send,
   X,
+  Loader2,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useSearchParams } from "react-router";
@@ -26,7 +27,7 @@ const statusConfig: Record<
 };
 
 export default function OfferManage() {
-  const { data: offersData = [], refetch } = trpc.offer.list.useQuery();
+  const { data: offersData = [], refetch, isLoading } = trpc.offer.list.useQuery();
   const updateOffer = trpc.offer.update.useMutation();
   const offerList = offersData as any[];
   const [statusFilter, setStatusFilter] = useState("全部");
@@ -122,6 +123,14 @@ export default function OfferManage() {
     await refetch();
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#2D8FF0] animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -208,8 +217,14 @@ export default function OfferManage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filtered.map((offer: any) => {
+      {filtered.length === 0 ? (
+        <div className="text-center py-16">
+          <FileCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-[#94A3B8]">暂无 Offer 数据</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filtered.map((offer: any) => {
           const cfg = statusConfig[offer.status];
           return (
             <div
@@ -378,7 +393,8 @@ export default function OfferManage() {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {showNegotiate && selectedOffer && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center">

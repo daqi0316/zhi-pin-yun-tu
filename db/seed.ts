@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import * as schema from "./schema";
 import { hashSync } from "bcryptjs";
 
-const DATABASE_URL = process.env.DATABASE_URL || "mysql://root:723319@localhost:3306/zhypx";
+const DATABASE_URL = process.env.DATABASE_URL || "mysql://root@localhost:3306/zhypx";
 
 async function seed() {
   const pool = mysql.createPool(DATABASE_URL);
@@ -19,9 +19,15 @@ async function seed() {
     return;
   }
 
+  const adminPassword = process.env.ADMIN_PASSWORD || "changeme";
+  const hrPassword = process.env.HR_PASSWORD || "changeme";
+  const ivPassword = process.env.IV_PASSWORD || "changeme";
+  const deptPassword = process.env.DEPT_PASSWORD || "changeme";
+  const guestPassword = process.env.GUEST_PASSWORD || "changeme";
+
   await db.insert(schema.users).values({
     username: "admin",
-    password: hashSync("admin123", 10),
+    password: hashSync(adminPassword, 10),
     name: "王芳",
     role: "admin",
   });
@@ -41,25 +47,25 @@ async function seed() {
   await db.insert(schema.users).values([
     {
       username: "hr_zhao",
-      password: hashSync("hr123", 10),
+      password: hashSync(hrPassword, 10),
       name: "赵敏",
       role: "hr",
     },
     {
       username: "iv_li",
-      password: hashSync("iv123", 10),
+      password: hashSync(ivPassword, 10),
       name: "李总",
       role: "面试官",
     },
     {
       username: "dept_wang",
-      password: hashSync("dept123", 10),
+      password: hashSync(deptPassword, 10),
       name: "王主管",
       role: "部门主管",
     },
     {
       username: "guest",
-      password: hashSync("guest123", 10),
+      password: hashSync(guestPassword, 10),
       name: "访客",
       role: "readonly",
     },

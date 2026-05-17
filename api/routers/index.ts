@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createRouter, authedQuery, adminQuery } from "../middleware";
+import { createRouter, authedQuery, adminQuery, roleQuery } from "../middleware";
 import { getDb } from "../../db/connection";
 import {
   candidates,
@@ -113,6 +113,7 @@ export const candidateRouter = createRouter({
         salary: z.string().optional(),
         stage: z.string().optional(),
         location: z.string().optional(),
+        notes: z.string().optional(),
         resumeUrl: z.string().optional(),
       })
     )
@@ -695,6 +696,21 @@ export const offerRouter = createRouter({
         .from(offers)
         .where(eq(offers.id, input.id))
         .limit(1);
+      if (!existing) throw new Error("Offer not found");
+      if (input.data.status) {
+        const validTransitions: Record<string, string[]> = {
+          draft: ["sent", "rejected"],
+          sent: ["negotiating", "accepted", "rejected", "expired"],
+          negotiating: ["accepted", "rejected", "expired"],
+          accepted: [],
+          rejected: [],
+          expired: [],
+        };
+        const allowed = validTransitions[existing.status] || [];
+        if (!allowed.includes(input.data.status)) {
+          throw new Error(`不允许从 "${existing.status}" 变更为 "${input.data.status}"`);
+        }
+      }
       const updateData: Record<string, unknown> = {
         ...input.data,
         updatedAt: sql`CURRENT_TIMESTAMP()`,
@@ -994,7 +1010,7 @@ export const alertRouter = createRouter({
     return { success: true };
   }),
 
-  executeAction: authedQuery.input(z.number()).mutation(async ({ input }) => {
+  executeAction: roleQuery("admin", "hr").input(z.number()).mutation(async ({ input }) => {
     const db = getDb();
     const [alert] = await db
       .select()

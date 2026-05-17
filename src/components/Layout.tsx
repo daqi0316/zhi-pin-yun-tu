@@ -43,10 +43,10 @@ const navItems: Array<{
   { key: "/talent", label: "人才库", icon: Users },
   { key: "/relations", label: "公司关联", icon: GitBranch },
   { key: "/positions", label: "岗位管理", icon: Briefcase },
-  { key: "/channels", label: "渠道管理", icon: Building2 },
   { key: "/interviews", label: "面试流程", icon: Route },
   { key: "/profiles", label: "人才画像", icon: UserCircle },
   { key: "/offers", label: "Offer管理", icon: FileCheck },
+  { key: "/channels", label: "渠道管理", icon: Building2 },
   { key: "/analytics", label: "数据分析", icon: BarChart3 },
   { key: "/alerts", label: "预警监控", icon: ShieldAlert },
   { key: "/audit", label: "操作日志", icon: Shield },
@@ -298,7 +298,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               onMouseDown={() => {
                                 setSearchVal("");
                                 setShowResults(false);
-                                navigate("/talent");
+                                navigate(`/talent?id=${c.id}`);
                               }}
                               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left"
                             >
@@ -334,7 +334,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               onMouseDown={() => {
                                 setSearchVal("");
                                 setShowResults(false);
-                                navigate("/positions");
+                                navigate(`/positions?id=${p.id}`);
                               }}
                               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left"
                             >
@@ -366,7 +366,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               onMouseDown={() => {
                                 setSearchVal("");
                                 setShowResults(false);
-                                navigate("/interviews");
+                                navigate(`/interviews?id=${iv.id}`);
                               }}
                               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left"
                             >

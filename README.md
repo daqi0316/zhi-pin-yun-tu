@@ -41,13 +41,17 @@ docker compose up -d
 
 ### 默认账号
 
-| 角色 | 用户名 | 密码 |
+首次运行 `npm run db:seed` 时会创建初始用户，密码通过以下环境变量指定（未设置则使用随机值）：
+
+| 角色 | 用户名 | 环境变量 |
 |---|---|---|
-| 管理员 | admin | admin123 |
-| HR | hr_zhao | hr123 |
-| 面试官 | iv_li | iv123 |
-| 部门主管 | dept_wang | dept123 |
-| 只读 | guest | guest123 |
+| 管理员 | admin | `ADMIN_PASSWORD` |
+| HR | hr_zhao | `HR_PASSWORD` |
+| 面试官 | iv_li | `IV_PASSWORD` |
+| 部门主管 | dept_wang | `DEPT_PASSWORD` |
+| 只读 | guest | `GUEST_PASSWORD` |
+
+请在 `.env` 文件中设置这些密码，或通过用户管理功能修改。
 
 ### 自定义配置
 

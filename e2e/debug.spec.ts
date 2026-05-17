@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
+
 test("人才画像页面调试", async ({ page }) => {
-  // 登录
   await page.goto("/login");
   await page.fill('input[placeholder="请输入用户名"]', "admin");
-  await page.fill('input[placeholder="请输入密码"]', "admin123");
+  await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
   await page.click('button[type="submit"]');
   await page.waitForURL("/", { timeout: 10000 });
 
@@ -34,7 +35,7 @@ test("人才画像页面调试", async ({ page }) => {
 test("面试流程页面调试", async ({ page }) => {
   await page.goto("/login");
   await page.fill('input[placeholder="请输入用户名"]', "admin");
-  await page.fill('input[placeholder="请输入密码"]', "admin123");
+  await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
   await page.click('button[type="submit"]');
   await page.waitForURL("/", { timeout: 10000 });
 

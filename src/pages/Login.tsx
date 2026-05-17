@@ -105,8 +105,7 @@ export default function Login() {
 
           <div className="mt-6 pt-4 border-t border-slate-100">
             <p className="text-xs text-center text-[#94A3B8]">
-              演示账户: <span className="font-mono text-[#475569]">admin</span>{" "}
-              / <span className="font-mono text-[#475569]">admin123</span>
+              请使用管理员分配的账号登录
             </p>
           </div>
         </div>

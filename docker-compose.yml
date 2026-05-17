@@ -4,7 +4,7 @@ services:
     ports:
       - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: 723319
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhypx2026}
       MYSQL_DATABASE: zhypx
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
@@ -23,10 +23,10 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: mysql://root:723319@mysql:3306/zhypx
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-zhypx2026}@mysql:3306/zhypx
       PORT: "3001"
       APP_ID: zhypx-dev
-      APP_SECRET: dev-secret-change-in-production
+      APP_SECRET: ${APP_SECRET:-please-change-this-secret-in-production}
       APP_URL: http://localhost:3001
       KIMI_AUTH_URL: http://auth.local
       KIMI_OPEN_URL: http://open.local

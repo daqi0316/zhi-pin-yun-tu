@@ -43,3 +43,4 @@ test-results/
 
 # Uploads (local file storage)
 uploads/resumes/
+.env

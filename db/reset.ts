@@ -1,9 +1,12 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
 
-const DATABASE_URL = process.env.DATABASE_URL || "mysql://root:723319@localhost:3306/zhypx";
+const DATABASE_URL = process.env.DATABASE_URL;
 
 async function reset() {
+  if (!DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is required");
+  }
   const url = new URL(DATABASE_URL);
   const { execSync } = await import("child_process");
 

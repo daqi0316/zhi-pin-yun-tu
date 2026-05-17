@@ -261,7 +261,7 @@ function BarsResultSummary({ scores }: { scores: Record<string, number> }) {
 }
 
 export default function InterviewFlow() {
-  const { data: interviewData, refetch } = trpc.interview.list.useQuery();
+  const { data: interviewData, refetch, isLoading } = trpc.interview.list.useQuery();
   const interviewList = interviewData?.items ?? [];
   const updateScoreMutation = trpc.interview.updateScore.useMutation();
   const generateFeedbackMutation =
@@ -376,6 +376,14 @@ export default function InterviewFlow() {
     setFeedbackText("");
     setShowBars(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#2D8FF0] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

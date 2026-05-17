@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
+
 test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("登录页面正常渲染", async ({ page }) => {
     await page.goto("/login");
@@ -12,7 +14,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("使用演示账户登录并跳转到首页", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
     await expect(page).toHaveURL("/");
@@ -21,7 +23,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("首页总览包含关键 KPI 卡片", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -33,7 +35,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到人才库", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -45,7 +47,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到岗位管理", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -57,7 +59,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到渠道管理", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -69,7 +71,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到面试流程", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -81,7 +83,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到人才画像", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -93,7 +95,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到Offer管理", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -105,7 +107,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到数据分析", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -117,7 +119,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到预警监控", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -129,7 +131,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏导航到公司关联", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -141,7 +143,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("无效路径跳转404页面", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -152,7 +154,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("侧边栏折叠和展开", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -178,7 +180,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("搜索框输入并展示结果", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 
@@ -195,7 +197,7 @@ test.describe("智聘云图 — 前后端集成浏览器测试", () => {
   test("AI招聘助手面板打开和关闭", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[placeholder="请输入用户名"]', "admin");
-    await page.fill('input[placeholder="请输入密码"]', "admin123");
+    await page.fill('input[placeholder="请输入密码"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL("/", { timeout: 10000 });
 

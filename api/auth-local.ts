@@ -30,10 +30,7 @@ export async function loginLocal(
     throw new Error("用户名或密码错误");
   }
 
-  // 验证密码（兼容明文和 bcrypt hash）
-  const passwordValid = user.password.startsWith("$2")
-    ? await bcrypt.compare(password, user.password)
-    : user.password === password;
+  const passwordValid = await bcrypt.compare(password, user.password);
 
   if (!passwordValid) {
     throw new Error("用户名或密码错误");

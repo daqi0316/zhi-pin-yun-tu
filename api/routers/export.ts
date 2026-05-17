@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createRouter, authedQuery } from "../middleware";
+import { createRouter, roleQuery } from "../middleware";
 import { getDb } from "../../db/connection";
 import {
   candidates,
@@ -26,7 +26,7 @@ function toCSV(headers: string[], rows: (string | number | null)[][]): string {
 }
 
 export const exportRouter = createRouter({
-  candidatesCSV: authedQuery.query(async () => {
+  candidatesCSV: roleQuery("admin", "hr").query(async () => {
     const db = getDb();
     const items = await db
       .select()
@@ -76,7 +76,7 @@ export const exportRouter = createRouter({
     return { csv: toCSV(headers, rows), filename: "候选人列表.csv" };
   }),
 
-  interviewsCSV: authedQuery.query(async () => {
+  interviewsCSV: roleQuery("admin", "hr").query(async () => {
     const db = getDb();
     const items = await db
       .select()
@@ -124,7 +124,7 @@ export const exportRouter = createRouter({
     return { csv: toCSV(headers, rows), filename: "面试记录.csv" };
   }),
 
-  offersCSV: authedQuery.query(async () => {
+  offersCSV: roleQuery("admin", "hr").query(async () => {
     const db = getDb();
     const items = await db
       .select()

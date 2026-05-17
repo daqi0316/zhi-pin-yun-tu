@@ -9,10 +9,32 @@ import { writeFile, mkdir, access, unlink } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { createReadStream } from "node:fs";
+import * as cookie from "cookie";
+import { Session } from "@contracts/constants";
+import { verifySessionToken } from "./auth/session";
+import { getDb } from "../db/connection";
+import { users } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
+
+async function requireLogin(c: any, next: any) {
+  const cookies = cookie.parse(c.req.header("cookie") || "");
+  const token = cookies[Session.cookieName];
+  if (!token) return c.json({ error: "未授权，请先登录" }, 401);
+  const claim = await verifySessionToken(token);
+  if (!claim) return c.json({ error: "未授权，请先登录" }, 401);
+  const db = getDb();
+  const rows = await db.select().from(users).where(eq(users.id, Number(claim.unionId))).limit(1);
+  const user = rows.at(0);
+  if (!user || user.status === "disabled") return c.json({ error: "未授权，请先登录" }, 401);
+  c.set("user", user);
+  await next();
+}
+
+app.use("/api/upload/*", requireLogin);
 
 app.use("/api/trpc/*", async c => {
   return fetchRequestHandler({

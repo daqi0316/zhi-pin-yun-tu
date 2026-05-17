@@ -65,7 +65,7 @@
 - **APP_URL**: http://localhost:3001（通知链接用，生产需改为实际域名）
 - **测试**: `npx vitest run` — 109 tests, 4 files, 零失败
 - **类型检查**: `npx tsc --noEmit` — 零错误
-- **DB**: MySQL 8 本地运行，用户 `root:723319`，库名 `zhypx`
+- **DB**: MySQL 8 本地运行，用户 `root`，密码见 `.env` `MYSQL_ROOT_PASSWORD`，库名 `zhypx`
 - **Docker**: `docker compose up -d` 启动 MySQL
 - **关键文件**: `api/router.ts` (17个子路由), `api/boot.ts` (4条原生路由), `api/scoring.ts` (评分引擎), `db/schema.ts` (10张表)
 - **DEEPSEEK_API_KEY**: 需在 .env 中配置后方可启用 AI Copilot 和 AI 面试评语功能

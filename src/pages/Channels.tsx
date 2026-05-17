@@ -9,11 +9,13 @@ import {
   Settings,
   X,
   Trash2,
+  Loader2,
+  Building2,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
 export default function Channels() {
-  const { data: channelsData, refetch } = trpc.channel.list.useQuery();
+  const { data: channelsData, refetch, isLoading } = trpc.channel.list.useQuery();
   const { data: currentUser } = trpc.auth.me.useQuery();
   const isAdmin = currentUser?.role === "admin";
   const [channelList, setChannelList] = useState<any[]>([]);
@@ -88,6 +90,14 @@ export default function Channels() {
           channelList.length
         ).toFixed(1)
       : "0";
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#2D8FF0] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -175,7 +185,13 @@ export default function Channels() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {channelList.map((ch: any) => (
+        {channelList.length === 0 ? (
+          <div className="col-span-full text-center py-16">
+            <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-[#94A3B8]">暂无渠道数据，点击右上角新增渠道</p>
+          </div>
+        ) : (
+          channelList.map((ch: any) => (
           <div
             key={ch.id}
             className={`bg-white rounded-2xl border border-slate-200/60 p-5 transition-all hover:shadow-lg hover:shadow-slate-200/50 ${
@@ -272,7 +288,8 @@ export default function Channels() {
               </span>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {showCreate && (

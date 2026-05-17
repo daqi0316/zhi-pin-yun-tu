@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { createRouter, authedQuery } from "../middleware";
+import { createRouter, roleQuery } from "../middleware";
 import { getDb } from "../../db/connection";
 import { auditLogs } from "../../db/schema";
-import { desc, eq, and, sql, like } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 
 export const auditLogRouter = createRouter({
-  list: authedQuery
+  list: roleQuery("admin", "hr")
     .input(
       z
         .object({
