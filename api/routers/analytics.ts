@@ -181,9 +181,7 @@ export const analyticsRouter = createRouter({
       const posInterviews = allInterviews.filter(
         iv => iv.positionId === pos.id
       );
-      const posOffers = allOffers.filter(
-        o => o.positionId === pos.id
-      );
+      const posOffers = allOffers.filter(o => o.positionId === pos.id);
 
       const conversionRate =
         posCandidates.length > 0

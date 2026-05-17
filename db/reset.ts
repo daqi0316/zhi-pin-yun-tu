@@ -13,8 +13,12 @@ async function reset() {
   console.log("🗑️  Dropping and recreating database...");
   const rootUrl = `${url.protocol}//${url.username}:${url.password}@${url.host}`;
   const connection = await mysql.createConnection(rootUrl);
-  await connection.execute(`DROP DATABASE IF EXISTS \`${url.pathname.slice(1)}\``);
-  await connection.execute(`CREATE DATABASE \`${url.pathname.slice(1)}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await connection.execute(
+    `DROP DATABASE IF EXISTS \`${url.pathname.slice(1)}\``
+  );
+  await connection.execute(
+    `CREATE DATABASE \`${url.pathname.slice(1)}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+  );
   await connection.end();
   console.log("✅ Database recreated.");
 
@@ -27,7 +31,7 @@ async function reset() {
   console.log("\n🎉 Database reset complete! You can now run `npm run dev`.");
 }
 
-reset().catch((err) => {
+reset().catch(err => {
   console.error("❌ Reset failed:", err);
   process.exit(1);
 });

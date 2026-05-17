@@ -27,7 +27,11 @@ const statusConfig: Record<
 };
 
 export default function OfferManage() {
-  const { data: offersData = [], refetch, isLoading } = trpc.offer.list.useQuery();
+  const {
+    data: offersData = [],
+    refetch,
+    isLoading,
+  } = trpc.offer.list.useQuery();
   const updateOffer = trpc.offer.update.useMutation();
   const offerList = offersData as any[];
   const [statusFilter, setStatusFilter] = useState("全部");
@@ -200,21 +204,27 @@ export default function OfferManage() {
       </div>
 
       <div className="flex items-center gap-2">
-        {["全部", "draft", "sent", "negotiating", "accepted", "rejected", "expired"].map(
-          s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`h-8 px-4 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === s
-                  ? "bg-[#2D8FF0] text-white"
-                  : "bg-white text-[#475569] border border-slate-200/60 hover:bg-slate-50"
-              }`}
-            >
-              {s === "全部" ? "全部" : statusConfig[s]?.label || s}
-            </button>
-          )
-        )}
+        {[
+          "全部",
+          "draft",
+          "sent",
+          "negotiating",
+          "accepted",
+          "rejected",
+          "expired",
+        ].map(s => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`h-8 px-4 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === s
+                ? "bg-[#2D8FF0] text-white"
+                : "bg-white text-[#475569] border border-slate-200/60 hover:bg-slate-50"
+            }`}
+          >
+            {s === "全部" ? "全部" : statusConfig[s]?.label || s}
+          </button>
+        ))}
       </div>
 
       {filtered.length === 0 ? (
@@ -225,174 +235,174 @@ export default function OfferManage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filtered.map((offer: any) => {
-          const cfg = statusConfig[offer.status];
-          return (
-            <div
-              key={offer.id}
-              className="bg-white rounded-2xl border border-slate-200/60 p-5 hover:shadow-lg hover:shadow-slate-200/50 transition-all"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  {offer.candidateAvatar ? (
-                    <img
-                      src={offer.candidateAvatar}
-                      alt={offer.candidateName || ""}
-                      className="w-11 h-11 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-11 h-11 rounded-xl bg-[#2D8FF0] flex items-center justify-center text-white text-sm font-semibold">
-                      {(offer.candidateName || "?").charAt(0)}
+            const cfg = statusConfig[offer.status];
+            return (
+              <div
+                key={offer.id}
+                className="bg-white rounded-2xl border border-slate-200/60 p-5 hover:shadow-lg hover:shadow-slate-200/50 transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    {offer.candidateAvatar ? (
+                      <img
+                        src={offer.candidateAvatar}
+                        alt={offer.candidateName || ""}
+                        className="w-11 h-11 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-[#2D8FF0] flex items-center justify-center text-white text-sm font-semibold">
+                        {(offer.candidateName || "?").charAt(0)}
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-semibold text-sm text-[#1E293B]">
+                        {offer.candidateName || "候选人"}
+                      </h3>
+                      <p className="text-xs text-[#94A3B8]">
+                        {offer.position || "-"}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-sm text-[#1E293B]">
-                      {offer.candidateName || "候选人"}
-                    </h3>
-                    <p className="text-xs text-[#94A3B8]">
-                      {offer.position || "-"}
-                    </p>
                   </div>
-                </div>
-                <span
-                  className="px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ background: cfg?.bg, color: cfg?.color }}
-                >
-                  {cfg?.label || offer.status}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="text-center p-2 bg-slate-50 rounded-lg">
-                  <div className="text-sm font-semibold text-[#1E293B]">
-                    {((offer.baseSalary || 0) / 1000).toFixed(0)}K
-                  </div>
-                  <div className="text-[10px] text-[#94A3B8]">基本月薪</div>
-                </div>
-                <div className="text-center p-2 bg-slate-50 rounded-lg">
-                  <div className="text-sm font-semibold text-[#1E293B]">
-                    {offer.bonus || 0}个月
-                  </div>
-                  <div className="text-[10px] text-[#94A3B8]">年终奖</div>
-                </div>
-                <div className="text-center p-2 bg-slate-50 rounded-lg">
-                  <div className="text-sm font-semibold text-[#1E293B]">
-                    {((offer.totalPackage || 0) / 10000).toFixed(0)}万
-                  </div>
-                  <div className="text-[10px] text-[#94A3B8]">年薪包</div>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-[#94A3B8]">接受概率预测</span>
                   <span
-                    className="font-semibold"
-                    style={{
-                      color:
-                        (offer.acceptanceProbability || 0) >= 80
-                          ? "#06D6A0"
-                          : (offer.acceptanceProbability || 0) >= 60
-                            ? "#2D8FF0"
-                            : "#FF5A65",
-                    }}
+                    className="px-2.5 py-1 rounded-full text-xs font-medium"
+                    style={{ background: cfg?.bg, color: cfg?.color }}
                   >
-                    {offer.acceptanceProbability || 0}%
+                    {cfg?.label || offer.status}
                   </span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${offer.acceptanceProbability || 0}%`,
-                      background:
-                        (offer.acceptanceProbability || 0) >= 80
-                          ? "#06D6A0"
-                          : (offer.acceptanceProbability || 0) >= 60
-                            ? "#2D8FF0"
-                            : "#FF5A65",
-                    }}
-                  />
-                </div>
-                {(offer.competitorOffers || 0) > 0 && (
-                  <p className="text-xs text-[#FF5A65] mt-1 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    该候选人有{offer.competitorOffers || 0}个竞对Offer
-                  </p>
-                )}
-              </div>
 
-              {offer.sentDate && (
-                <div className="flex items-center justify-between text-xs text-[#94A3B8] mb-3">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    发送于 {offer.sentDate}
-                  </span>
-                  {offer.deadline && (
-                    <span className="flex items-center gap-1">
-                      截止 {offer.deadline}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center p-2 bg-slate-50 rounded-lg">
+                    <div className="text-sm font-semibold text-[#1E293B]">
+                      {((offer.baseSalary || 0) / 1000).toFixed(0)}K
+                    </div>
+                    <div className="text-[10px] text-[#94A3B8]">基本月薪</div>
+                  </div>
+                  <div className="text-center p-2 bg-slate-50 rounded-lg">
+                    <div className="text-sm font-semibold text-[#1E293B]">
+                      {offer.bonus || 0}个月
+                    </div>
+                    <div className="text-[10px] text-[#94A3B8]">年终奖</div>
+                  </div>
+                  <div className="text-center p-2 bg-slate-50 rounded-lg">
+                    <div className="text-sm font-semibold text-[#1E293B]">
+                      {((offer.totalPackage || 0) / 10000).toFixed(0)}万
+                    </div>
+                    <div className="text-[10px] text-[#94A3B8]">年薪包</div>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-[#94A3B8]">接受概率预测</span>
+                    <span
+                      className="font-semibold"
+                      style={{
+                        color:
+                          (offer.acceptanceProbability || 0) >= 80
+                            ? "#06D6A0"
+                            : (offer.acceptanceProbability || 0) >= 60
+                              ? "#2D8FF0"
+                              : "#FF5A65",
+                      }}
+                    >
+                      {offer.acceptanceProbability || 0}%
                     </span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${offer.acceptanceProbability || 0}%`,
+                        background:
+                          (offer.acceptanceProbability || 0) >= 80
+                            ? "#06D6A0"
+                            : (offer.acceptanceProbability || 0) >= 60
+                              ? "#2D8FF0"
+                              : "#FF5A65",
+                      }}
+                    />
+                  </div>
+                  {(offer.competitorOffers || 0) > 0 && (
+                    <p className="text-xs text-[#FF5A65] mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      该候选人有{offer.competitorOffers || 0}个竞对Offer
+                    </p>
                   )}
                 </div>
-              )}
 
-              <div className="flex gap-2">
-                {offer.status === "draft" && (
-                  <button
-                    onClick={() => handleStatusChange(offer.id, "sent")}
-                    className="flex-1 h-9 bg-[#2D8FF0] text-white rounded-lg text-xs font-medium hover:bg-[#1a7de0] transition-colors"
-                  >
-                    发送Offer
-                  </button>
+                {offer.sentDate && (
+                  <div className="flex items-center justify-between text-xs text-[#94A3B8] mb-3">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      发送于 {offer.sentDate}
+                    </span>
+                    {offer.deadline && (
+                      <span className="flex items-center gap-1">
+                        截止 {offer.deadline}
+                      </span>
+                    )}
+                  </div>
                 )}
-                {offer.status === "sent" && (
-                  <>
+
+                <div className="flex gap-2">
+                  {offer.status === "draft" && (
                     <button
-                      onClick={() => {
-                        setSelectedOffer(offer);
-                        setNegSalary(offer.baseSalary || 0);
-                        setNegBonus(offer.bonus || 0);
-                        setShowNegotiate(true);
-                      }}
-                      className="flex-1 h-9 bg-[#F59E0B] text-white rounded-lg text-xs font-medium hover:bg-[#d97706] transition-colors"
+                      onClick={() => handleStatusChange(offer.id, "sent")}
+                      className="flex-1 h-9 bg-[#2D8FF0] text-white rounded-lg text-xs font-medium hover:bg-[#1a7de0] transition-colors"
                     >
-                      进入谈判
+                      发送Offer
                     </button>
-                    <button
-                      onClick={() => handleStatusChange(offer.id, "accepted")}
-                      className="flex-1 h-9 bg-[#06D6A0] text-white rounded-lg text-xs font-medium hover:bg-[#059669] transition-colors"
-                    >
-                      已接受
+                  )}
+                  {offer.status === "sent" && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setSelectedOffer(offer);
+                          setNegSalary(offer.baseSalary || 0);
+                          setNegBonus(offer.bonus || 0);
+                          setShowNegotiate(true);
+                        }}
+                        className="flex-1 h-9 bg-[#F59E0B] text-white rounded-lg text-xs font-medium hover:bg-[#d97706] transition-colors"
+                      >
+                        进入谈判
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(offer.id, "accepted")}
+                        className="flex-1 h-9 bg-[#06D6A0] text-white rounded-lg text-xs font-medium hover:bg-[#059669] transition-colors"
+                      >
+                        已接受
+                      </button>
+                    </>
+                  )}
+                  {offer.status === "negotiating" && (
+                    <>
+                      <button
+                        onClick={() => handleStatusChange(offer.id, "accepted")}
+                        className="flex-1 h-9 bg-[#06D6A0] text-white rounded-lg text-xs font-medium hover:bg-[#059669] transition-colors"
+                      >
+                        确认接受
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(offer.id, "rejected")}
+                        className="h-9 px-3 border border-slate-200 text-[#475569] rounded-lg text-xs hover:bg-slate-50 transition-colors"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                  {(offer.status === "accepted" ||
+                    offer.status === "rejected") && (
+                    <button className="flex-1 h-9 bg-slate-100 text-[#94A3B8] rounded-lg text-xs font-medium cursor-default">
+                      {offer.status === "accepted"
+                        ? "已关闭 - 接受"
+                        : "已关闭 - 拒绝"}
                     </button>
-                  </>
-                )}
-                {offer.status === "negotiating" && (
-                  <>
-                    <button
-                      onClick={() => handleStatusChange(offer.id, "accepted")}
-                      className="flex-1 h-9 bg-[#06D6A0] text-white rounded-lg text-xs font-medium hover:bg-[#059669] transition-colors"
-                    >
-                      确认接受
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(offer.id, "rejected")}
-                      className="h-9 px-3 border border-slate-200 text-[#475569] rounded-lg text-xs hover:bg-slate-50 transition-colors"
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                )}
-                {(offer.status === "accepted" ||
-                  offer.status === "rejected") && (
-                  <button className="flex-1 h-9 bg-slate-100 text-[#94A3B8] rounded-lg text-xs font-medium cursor-default">
-                    {offer.status === "accepted"
-                      ? "已关闭 - 接受"
-                      : "已关闭 - 拒绝"}
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
       )}
 

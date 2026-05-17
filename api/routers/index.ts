@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { createRouter, authedQuery, adminQuery, roleQuery } from "../middleware";
+import {
+  createRouter,
+  authedQuery,
+  adminQuery,
+  roleQuery,
+} from "../middleware";
 import { getDb } from "../../db/connection";
 import {
   candidates,
@@ -11,7 +16,11 @@ import {
   positions,
 } from "../../db/schema";
 import { eq, desc, sql, like, or, and } from "drizzle-orm";
-import { calculateResumeScore, calculateIntentScore, type ScoringInput } from "../scoring";
+import {
+  calculateResumeScore,
+  calculateIntentScore,
+  type ScoringInput,
+} from "../scoring";
 import { recordAudit } from "../lib/audit";
 import { sendNotifications } from "../lib/notifications";
 
@@ -115,13 +124,26 @@ export const candidateRouter = createRouter({
         location: z.string().optional(),
         notes: z.string().optional(),
         resumeUrl: z.string().optional(),
+        workHistory: z
+          .array(
+            z.object({
+              company: z.string(),
+              position: z.string().optional(),
+              startDate: z.string().optional(),
+              endDate: z.string().optional(),
+              description: z.string().optional(),
+              isCurrent: z.number().optional(),
+            })
+          )
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      const { workHistory: wh, ...candidateData } = input;
       await db.insert(candidates).values({
-        ...input,
-        skills: JSON.stringify(input.skills || []),
+        ...candidateData,
+        skills: JSON.stringify(candidateData.skills || []),
         status: "在职-考虑机会",
       });
       const [created] = await db
@@ -129,6 +151,21 @@ export const candidateRouter = createRouter({
         .from(candidates)
         .orderBy(desc(candidates.id))
         .limit(1);
+
+      if (wh && wh.length > 0) {
+        await db.insert(workHistories).values(
+          wh.map(w => ({
+            candidateId: created.id,
+            company: w.company,
+            position: w.position || null,
+            startDate: w.startDate || null,
+            endDate: w.endDate || null,
+            description: w.description || null,
+            isCurrent: w.isCurrent ?? 0,
+          }))
+        );
+      }
+
       await recordAudit({
         action: "create",
         entityType: "candidate",
@@ -138,7 +175,7 @@ export const candidateRouter = createRouter({
         changes: { name: { old: null, new: input.name } },
       });
       return created;
-  }),
+    }),
 
   update: authedQuery
     .input(
@@ -708,7 +745,9 @@ export const offerRouter = createRouter({
         };
         const allowed = validTransitions[existing.status] || [];
         if (!allowed.includes(input.data.status)) {
-          throw new Error(`不允许从 "${existing.status}" 变更为 "${input.data.status}"`);
+          throw new Error(
+            `不允许从 "${existing.status}" 变更为 "${input.data.status}"`
+          );
         }
       }
       const updateData: Record<string, unknown> = {
@@ -1010,40 +1049,45 @@ export const alertRouter = createRouter({
     return { success: true };
   }),
 
-  executeAction: roleQuery("admin", "hr").input(z.number()).mutation(async ({ input }) => {
-    const db = getDb();
-    const [alert] = await db
-      .select()
-      .from(alerts)
-      .where(eq(alerts.id, input))
-      .limit(1);
-    if (!alert) throw new Error("预警不存在");
-
-    await db.update(alerts).set({ isRead: 1 }).where(eq(alerts.id, input));
-
-    if (alert.candidateId) {
-      const [candidate] = await db
+  executeAction: roleQuery("admin", "hr")
+    .input(z.number())
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const [alert] = await db
         .select()
-        .from(candidates)
-        .where(eq(candidates.id, alert.candidateId))
+        .from(alerts)
+        .where(eq(alerts.id, input))
         .limit(1);
+      if (!alert) throw new Error("预警不存在");
 
-      if (candidate && alert.type === "risk") {
-        await db
-          .update(candidates)
-          .set({ status: "在职-考虑机会", updatedAt: sql`CURRENT_TIMESTAMP()` })
-          .where(eq(candidates.id, alert.candidateId));
+      await db.update(alerts).set({ isRead: 1 }).where(eq(alerts.id, input));
+
+      if (alert.candidateId) {
+        const [candidate] = await db
+          .select()
+          .from(candidates)
+          .where(eq(candidates.id, alert.candidateId))
+          .limit(1);
+
+        if (candidate && alert.type === "risk") {
+          await db
+            .update(candidates)
+            .set({
+              status: "在职-考虑机会",
+              updatedAt: sql`CURRENT_TIMESTAMP()`,
+            })
+            .where(eq(candidates.id, alert.candidateId));
+        }
       }
-    }
 
-    return {
-      success: true,
-      alertId: input,
-      action: alert.action,
-      candidateId: alert.candidateId,
-      type: alert.type,
-    };
-  }),
+      return {
+        success: true,
+        alertId: input,
+        action: alert.action,
+        candidateId: alert.candidateId,
+        type: alert.type,
+      };
+    }),
 
   autoGenerate: adminQuery.mutation(async () => {
     const db = getDb();

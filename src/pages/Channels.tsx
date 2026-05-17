@@ -15,7 +15,11 @@ import {
 import { trpc } from "@/providers/trpc";
 
 export default function Channels() {
-  const { data: channelsData, refetch, isLoading } = trpc.channel.list.useQuery();
+  const {
+    data: channelsData,
+    refetch,
+    isLoading,
+  } = trpc.channel.list.useQuery();
   const { data: currentUser } = trpc.auth.me.useQuery();
   const isAdmin = currentUser?.role === "admin";
   const [channelList, setChannelList] = useState<any[]>([]);
@@ -192,103 +196,104 @@ export default function Channels() {
           </div>
         ) : (
           channelList.map((ch: any) => (
-          <div
-            key={ch.id}
-            className={`bg-white rounded-2xl border border-slate-200/60 p-5 transition-all hover:shadow-lg hover:shadow-slate-200/50 ${
-              ch.status !== "active" ? "opacity-60" : ""
-            }`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-                  style={{
-                    background: ch.status === "active" ? "#2D8FF0" : "#94A3B8",
-                  }}
-                >
-                  {ch.name?.slice(0, 1) || "?"}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-[#1E293B]">
-                    {ch.name}
-                  </h3>
-                  <span className="text-xs text-[#94A3B8]">{ch.type}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => toggleStatus(ch)}
-                  className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"
-                  title={ch.status === "active" ? "暂停" : "启动"}
-                >
-                  {ch.status === "active" ? (
-                    <Pause className="w-3.5 h-3.5 text-slate-400" />
-                  ) : (
-                    <Play className="w-3.5 h-3.5 text-[#06D6A0]" />
-                  )}
-                </button>
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDelete(ch)}
-                    className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors"
-                    title="删除"
+            <div
+              key={ch.id}
+              className={`bg-white rounded-2xl border border-slate-200/60 p-5 transition-all hover:shadow-lg hover:shadow-slate-200/50 ${
+                ch.status !== "active" ? "opacity-60" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+                    style={{
+                      background:
+                        ch.status === "active" ? "#2D8FF0" : "#94A3B8",
+                    }}
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-[#FF5A65]" />
+                    {ch.name?.slice(0, 1) || "?"}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-[#1E293B]">
+                      {ch.name}
+                    </h3>
+                    <span className="text-xs text-[#94A3B8]">{ch.type}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => toggleStatus(ch)}
+                    className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"
+                    title={ch.status === "active" ? "暂停" : "启动"}
+                  >
+                    {ch.status === "active" ? (
+                      <Pause className="w-3.5 h-3.5 text-slate-400" />
+                    ) : (
+                      <Play className="w-3.5 h-3.5 text-[#06D6A0]" />
+                    )}
                   </button>
-                )}
-                <button className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors">
-                  <Settings className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-              </div>
-            </div>
-
-            <div className="w-full h-[60px] mb-4 rounded-lg bg-slate-50 flex items-center justify-center">
-              <span className="text-xs text-[#94A3B8]">趋势暂无</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <div className="text-sm font-semibold text-[#1E293B] font-tabular">
-                  {ch.applications || 0}
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDelete(ch)}
+                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors"
+                      title="删除"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-[#FF5A65]" />
+                    </button>
+                  )}
+                  <button className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors">
+                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
                 </div>
-                <div className="text-[10px] text-[#94A3B8]">投递量</div>
               </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-[#1E293B] font-tabular">
-                  {ch.conversionRate || 0}%
+
+              <div className="w-full h-[60px] mb-4 rounded-lg bg-slate-50 flex items-center justify-center">
+                <span className="text-xs text-[#94A3B8]">趋势暂无</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center">
+                  <div className="text-sm font-semibold text-[#1E293B] font-tabular">
+                    {ch.applications || 0}
+                  </div>
+                  <div className="text-[10px] text-[#94A3B8]">投递量</div>
                 </div>
-                <div className="text-[10px] text-[#94A3B8]">转化率</div>
+                <div className="text-center">
+                  <div className="text-sm font-semibold text-[#1E293B] font-tabular">
+                    {ch.conversionRate || 0}%
+                  </div>
+                  <div className="text-[10px] text-[#94A3B8]">转化率</div>
+                </div>
+                <div className="text-center">
+                  <div
+                    className="text-sm font-semibold"
+                    style={{
+                      color:
+                        (ch.roi || 0) >= 3
+                          ? "#06D6A0"
+                          : (ch.roi || 0) >= 2
+                            ? "#2D8FF0"
+                            : "#F59E0B",
+                    }}
+                  >
+                    {ch.roi || 0}
+                  </div>
+                  <div className="text-[10px] text-[#94A3B8]">ROI</div>
+                </div>
               </div>
-              <div className="text-center">
-                <div
-                  className="text-sm font-semibold"
-                  style={{
-                    color:
-                      (ch.roi || 0) >= 3
-                        ? "#06D6A0"
-                        : (ch.roi || 0) >= 2
-                          ? "#2D8FF0"
-                          : "#F59E0B",
-                  }}
+
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-xs text-[#94A3B8]">
+                  投入 ¥{((ch.cost || 0) / 10000).toFixed(1)}万
+                </span>
+                <span
+                  className={`text-xs font-medium ${ch.status === "active" ? "text-[#06D6A0]" : "text-[#94A3B8]"}`}
                 >
-                  {ch.roi || 0}
-                </div>
-                <div className="text-[10px] text-[#94A3B8]">ROI</div>
+                  {ch.status === "active" ? "运行中" : "已暂停"}
+                </span>
               </div>
             </div>
-
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-[#94A3B8]">
-                投入 ¥{((ch.cost || 0) / 10000).toFixed(1)}万
-              </span>
-              <span
-                className={`text-xs font-medium ${ch.status === "active" ? "text-[#06D6A0]" : "text-[#94A3B8]"}`}
-              >
-                {ch.status === "active" ? "运行中" : "已暂停"}
-              </span>
-            </div>
-          </div>
-        ))
+          ))
         )}
       </div>
 

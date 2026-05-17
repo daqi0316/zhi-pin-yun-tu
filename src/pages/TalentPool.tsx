@@ -19,6 +19,8 @@ import {
   Upload,
   Loader2,
   Eye,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useNavigate } from "react-router";
@@ -60,6 +62,15 @@ interface CandidateDetail {
   resumeUrl: string | null;
 }
 
+interface WorkHistoryEntry {
+  company: string;
+  position: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  isCurrent: number;
+}
+
 export default function TalentPool() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("全部");
@@ -73,6 +84,12 @@ export default function TalentPool() {
   const [uploading, setUploading] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 20;
+  const [resumeContent, setResumeContent] = useState<string | null>(null);
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [parsedWorkHistory, setParsedWorkHistory] = useState<
+    WorkHistoryEntry[]
+  >([]);
+  const [parsing, setParsing] = useState(false);
 
   const utils = trpc.useUtils();
   const navigate = useNavigate();
@@ -134,6 +151,30 @@ export default function TalentPool() {
     { enabled: !!selectedId }
   );
 
+  useEffect(() => {
+    const url = candidateDetail?.resumeUrl;
+    if (!url) {
+      setResumeContent(null);
+      return;
+    }
+    setResumeLoading(true);
+    fetch(url)
+      .then(r => {
+        if (!r.ok) throw new Error("fetch failed");
+        const ct = r.headers.get("content-type") || "";
+        if (ct.includes("text/plain")) return r.text();
+        return null;
+      })
+      .then(text => {
+        setResumeContent(text);
+        setResumeLoading(false);
+      })
+      .catch(() => {
+        setResumeContent(null);
+        setResumeLoading(false);
+      });
+  }, [candidateDetail?.resumeUrl]);
+
   const { data: currentUser } = trpc.auth.me.useQuery();
   const isAdmin = currentUser?.role === "admin";
 
@@ -157,6 +198,7 @@ export default function TalentPool() {
     onSuccess: () => {
       refetch();
       setShowCreate(false);
+      setParsedWorkHistory([]);
       setNewCandidate({
         name: "",
         phone: "",
@@ -197,6 +239,17 @@ export default function TalentPool() {
       location: newCandidate.location || undefined,
       notes: newCandidate.notes || undefined,
       resumeUrl: newCandidate.resumeUrl || undefined,
+      workHistory:
+        parsedWorkHistory.length > 0
+          ? parsedWorkHistory.map(w => ({
+              company: w.company,
+              position: w.position || undefined,
+              startDate: w.startDate || undefined,
+              endDate: w.endDate || undefined,
+              description: w.description || undefined,
+              isCurrent: w.isCurrent ? 1 : 0,
+            }))
+          : undefined,
     });
   };
 
@@ -204,10 +257,11 @@ export default function TalentPool() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setParsing(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload/resume", {
+      const res = await fetch("/api/upload/resume/parse", {
         method: "POST",
         body: formData,
       });
@@ -215,10 +269,35 @@ export default function TalentPool() {
       if (data.url) {
         setNewCandidate(p => ({ ...p, resumeUrl: data.url }));
       }
+      if (data.parsed) {
+        const p = data.parsed;
+        setNewCandidate(prev => ({
+          ...prev,
+          name: prev.name || p.name || "",
+          phone: prev.phone || p.phone || "",
+          email: prev.email || p.email || "",
+          location: prev.location || p.location || "",
+          position: prev.position || p.position || "",
+          education: prev.education || p.education || "",
+          company: prev.company || p.workHistory?.[0]?.company || "",
+          skills: prev.skills || (p.skills?.length ? p.skills.join(", ") : ""),
+        }));
+        setParsedWorkHistory(
+          p.workHistory?.map((w: any) => ({
+            company: w.company || "",
+            position: w.position || "",
+            startDate: w.startDate || "",
+            endDate: w.endDate || "",
+            description: w.description || "",
+            isCurrent: w.isCurrent ? 1 : 0,
+          })) || []
+        );
+      }
     } catch {
       alert("文件上传失败，请检查文件格式或网络连接");
     } finally {
       setUploading(false);
+      setParsing(false);
     }
   };
 
@@ -459,7 +538,8 @@ export default function TalentPool() {
           {data && (data.total ?? 0) > pageSize && (
             <div className="flex items-center justify-between px-1 pt-4">
               <span className="text-sm text-[#94A3B8]">
-                第 {data.page ?? page} 页，共 {Math.ceil((data.total ?? 0) / pageSize)} 页
+                第 {data.page ?? page} 页，共{" "}
+                {Math.ceil((data.total ?? 0) / pageSize)} 页
               </span>
               <div className="flex items-center gap-1">
                 <button
@@ -470,7 +550,12 @@ export default function TalentPool() {
                   &lt;
                 </button>
                 {Array.from(
-                  { length: Math.min(5, Math.ceil((data.total ?? 0) / pageSize)) },
+                  {
+                    length: Math.min(
+                      5,
+                      Math.ceil((data.total ?? 0) / pageSize)
+                    ),
+                  },
                   (_, i) => {
                     const totalPages = Math.ceil((data.total ?? 0) / pageSize);
                     let pageNum: number;
@@ -532,7 +617,9 @@ export default function TalentPool() {
                     <button
                       onClick={() => {
                         if (
-                          confirm(`确认删除候选人 ${candidateDetail.name}？此操作不可恢复。`)
+                          confirm(
+                            `确认删除候选人 ${candidateDetail.name}？此操作不可恢复。`
+                          )
                         ) {
                           deleteMutation.mutate(selectedId!);
                         }
@@ -678,6 +765,106 @@ export default function TalentPool() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Work History Table */}
+                  {((candidateDetail as any).workHistory ?? []).length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                        <Briefcase className="w-4 h-4 text-[#2D8FF0]" />
+                        工作经历
+                      </h4>
+                      <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                              <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                                公司
+                              </th>
+                              <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                                职位
+                              </th>
+                              <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                                时间
+                              </th>
+                              <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                                工作内容
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(candidateDetail as any).workHistory.map(
+                              (w: any, i: number) => (
+                                <tr
+                                  key={w.id || i}
+                                  className="border-b border-slate-100 last:border-0"
+                                >
+                                  <td className="px-3 py-2 text-[#1E293B] font-medium">
+                                    {w.company}
+                                  </td>
+                                  <td className="px-3 py-2 text-[#475569]">
+                                    {w.position || "-"}
+                                  </td>
+                                  <td className="px-3 py-2 text-[#94A3B8] whitespace-nowrap text-xs">
+                                    {w.startDate || ""}
+                                    {w.startDate && (w.endDate || w.isCurrent)
+                                      ? " — "
+                                      : ""}
+                                    {w.isCurrent ? "至今" : w.endDate || ""}
+                                  </td>
+                                  <td className="px-3 py-2 text-[#475569] text-xs leading-relaxed">
+                                    {w.description || "-"}
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Resume Preview */}
+                  {candidateDetail.resumeUrl && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-[#1E293B] mb-2 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-[#2D8FF0]" />
+                        简历预览
+                      </h4>
+                      {resumeLoading ? (
+                        <div className="flex items-center gap-2 py-4 text-sm text-[#94A3B8]">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          加载简历中...
+                        </div>
+                      ) : resumeContent ? (
+                        <>
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 max-h-[320px] overflow-y-auto custom-scrollbar">
+                            <pre className="text-sm text-[#334155] leading-relaxed whitespace-pre-wrap font-sans">
+                              {resumeContent}
+                            </pre>
+                          </div>
+                          <a
+                            href={candidateDetail.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-2 text-xs text-[#2D8FF0] hover:underline"
+                          >
+                            <Eye className="w-3 h-3" />
+                            在新窗口打开简历原件
+                          </a>
+                        </>
+                      ) : (
+                        <a
+                          href={candidateDetail.resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#2D8FF0]/5 border border-[#2D8FF0]/10 rounded-lg text-sm text-[#2D8FF0] hover:bg-[#2D8FF0]/10 transition-colors"
+                        >
+                          <FileText className="w-4 h-4" />
+                          查看简历文件
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   {candidateDetail.notes && (
                     <div className="mb-6">
@@ -1150,10 +1337,7 @@ export default function TalentPool() {
                         <button
                           type="button"
                           onClick={() => {
-                            window.open(
-                              newCandidate.resumeUrl,
-                              "_blank"
-                            );
+                            window.open(newCandidate.resumeUrl, "_blank");
                           }}
                           className="h-10 w-10 flex items-center justify-center border border-slate-200 rounded-xl hover:bg-slate-50"
                           title="预览简历"
@@ -1202,6 +1386,163 @@ export default function TalentPool() {
                   </div>
                 </div>
               </div>
+
+              {/* Parsed Work History Table */}
+              {parsing && (
+                <div className="flex items-center gap-2 py-3 text-sm text-[#94A3B8]">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  正在解析简历内容...
+                </div>
+              )}
+              {parsedWorkHistory.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-[#1E293B]">
+                      工作经历（解析自简历）
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setParsedWorkHistory(prev => [
+                          ...prev,
+                          {
+                            company: "",
+                            position: "",
+                            startDate: "",
+                            endDate: "",
+                            description: "",
+                            isCurrent: 0,
+                          },
+                        ])
+                      }
+                      className="flex items-center gap-1 text-xs text-[#2D8FF0] hover:underline"
+                    >
+                      <Plus className="w-3 h-3" /> 添加行
+                    </button>
+                  </div>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                            公司
+                          </th>
+                          <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                            职位
+                          </th>
+                          <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                            入职
+                          </th>
+                          <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                            离职
+                          </th>
+                          <th className="text-left px-3 py-2 text-[#94A3B8] font-medium text-xs">
+                            工作内容
+                          </th>
+                          <th className="w-10" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedWorkHistory.map((w, i) => (
+                          <tr
+                            key={i}
+                            className="border-b border-slate-100 last:border-0"
+                          >
+                            <td className="px-3 py-1.5">
+                              <input
+                                value={w.company}
+                                onChange={e => {
+                                  const next = [...parsedWorkHistory];
+                                  next[i] = {
+                                    ...next[i],
+                                    company: e.target.value,
+                                  };
+                                  setParsedWorkHistory(next);
+                                }}
+                                className="w-full text-xs bg-transparent focus:outline-none"
+                                placeholder="公司名"
+                              />
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <input
+                                value={w.position}
+                                onChange={e => {
+                                  const next = [...parsedWorkHistory];
+                                  next[i] = {
+                                    ...next[i],
+                                    position: e.target.value,
+                                  };
+                                  setParsedWorkHistory(next);
+                                }}
+                                className="w-full text-xs bg-transparent focus:outline-none"
+                                placeholder="职位"
+                              />
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <input
+                                value={w.startDate}
+                                onChange={e => {
+                                  const next = [...parsedWorkHistory];
+                                  next[i] = {
+                                    ...next[i],
+                                    startDate: e.target.value,
+                                  };
+                                  setParsedWorkHistory(next);
+                                }}
+                                className="w-16 text-xs bg-transparent focus:outline-none"
+                                placeholder="2020.01"
+                              />
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <input
+                                value={w.endDate}
+                                onChange={e => {
+                                  const next = [...parsedWorkHistory];
+                                  next[i] = {
+                                    ...next[i],
+                                    endDate: e.target.value,
+                                  };
+                                  setParsedWorkHistory(next);
+                                }}
+                                className="w-16 text-xs bg-transparent focus:outline-none"
+                                placeholder="至今"
+                              />
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <input
+                                value={w.description}
+                                onChange={e => {
+                                  const next = [...parsedWorkHistory];
+                                  next[i] = {
+                                    ...next[i],
+                                    description: e.target.value,
+                                  };
+                                  setParsedWorkHistory(next);
+                                }}
+                                className="w-full text-xs bg-transparent focus:outline-none"
+                                placeholder="工作内容描述"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setParsedWorkHistory(prev =>
+                                    prev.filter((_, idx) => idx !== i)
+                                  )
+                                }
+                                className="text-[#94A3B8] hover:text-red-400"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div className="mb-4">
                 <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">

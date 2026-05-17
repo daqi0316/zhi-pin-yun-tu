@@ -204,29 +204,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {navItems
             .filter(item => !item.adminOnly || isAdmin)
             .map(item => {
-            const isActive = activeKey === item.key;
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.key}
-                onClick={() => navigate(item.key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
-                  isActive
-                    ? "bg-[#2D8FF0]/15 text-[#2D8FF0]"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-                title={collapsed ? item.label : undefined}
-              >
-                <Icon
-                  className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-[#2D8FF0]" : ""}`}
-                />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-                {isActive && !collapsed && (
-                  <div className="ml-auto w-1 h-4 rounded-full bg-[#2D8FF0]" />
-                )}
-              </button>
-            );
-          })}
+              const isActive = activeKey === item.key;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => navigate(item.key)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
+                    isActive
+                      ? "bg-[#2D8FF0]/15 text-[#2D8FF0]"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <Icon
+                    className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-[#2D8FF0]" : ""}`}
+                  />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {isActive && !collapsed && (
+                    <div className="ml-auto w-1 h-4 rounded-full bg-[#2D8FF0]" />
+                  )}
+                </button>
+              );
+            })}
         </nav>
 
         {/* Collapse Toggle */}
@@ -637,11 +637,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {showChangePwd && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowChangePwd(false)} />
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowChangePwd(false)}
+          />
           <div className="relative bg-white rounded-2xl shadow-2xl w-[380px]">
             <div className="p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[#1E293B]">修改密码</h2>
+                <h2 className="text-lg font-semibold text-[#1E293B]">
+                  修改密码
+                </h2>
                 <button
                   onClick={() => setShowChangePwd(false)}
                   className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"
@@ -651,7 +656,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">原密码</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    原密码
+                  </label>
                   <input
                     type="password"
                     value={oldPwd}
@@ -661,7 +668,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">新密码</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    新密码
+                  </label>
                   <input
                     type="password"
                     value={newPwd}
@@ -674,9 +683,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => {
-                    if (!oldPwd) { alert("请输入原密码"); return; }
-                    if (newPwd.length < 4) { alert("新密码至少4位"); return; }
-                    changePwdMutation.mutate({ oldPassword: oldPwd, newPassword: newPwd });
+                    if (!oldPwd) {
+                      alert("请输入原密码");
+                      return;
+                    }
+                    if (newPwd.length < 4) {
+                      alert("新密码至少4位");
+                      return;
+                    }
+                    changePwdMutation.mutate({
+                      oldPassword: oldPwd,
+                      newPassword: newPwd,
+                    });
                   }}
                   disabled={changePwdMutation.isPending}
                   className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors disabled:opacity-40"

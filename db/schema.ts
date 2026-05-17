@@ -15,8 +15,12 @@ export const users = mysqlTable("users", {
   name: varchar("name", { length: 255 }),
   role: varchar("role", { length: 20 }).default("user").notNull(),
   status: varchar("status", { length: 20 }).default("active").notNull(),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
-  updatedAt: datetime("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
+  updatedAt: datetime("updatedAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type User = typeof users.$inferSelect;
@@ -26,15 +30,21 @@ export const roles = mysqlTable("roles", {
   id: int("id").primaryKey().autoincrement(),
   name: varchar("name", { length: 50 }).notNull().unique(),
   label: varchar("label", { length: 100 }).notNull(),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type Role = typeof roles.$inferSelect;
 
 export const userRoles = mysqlTable("userRoles", {
   id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  roleId: int("roleId").notNull().references(() => roles.id, { onDelete: "cascade" }),
+  userId: int("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  roleId: int("roleId")
+    .notNull()
+    .references(() => roles.id, { onDelete: "cascade" }),
 });
 
 export type UserRole = typeof userRoles.$inferSelect;
@@ -54,8 +64,12 @@ export const positions = mysqlTable("positions", {
   salaryMax: int("salaryMax"),
   salaryRange: varchar("salaryRange", { length: 100 }),
   status: varchar("status", { length: 20 }).default("active"),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
-  updatedAt: datetime("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
+  updatedAt: datetime("updatedAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type Position = typeof positions.$inferSelect;
@@ -82,8 +96,12 @@ export const candidates = mysqlTable("candidates", {
   stage: varchar("stage", { length: 50 }).default("初筛"),
   notes: text("notes"),
   resumeUrl: varchar("resumeUrl", { length: 500 }),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
-  updatedAt: datetime("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
+  updatedAt: datetime("updatedAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type Candidate = typeof candidates.$inferSelect;
@@ -91,7 +109,9 @@ export type InsertCandidate = typeof candidates.$inferInsert;
 
 export const workHistories = mysqlTable("workHistories", {
   id: int("id").primaryKey().autoincrement(),
-  candidateId: int("candidateId").notNull().references(() => candidates.id, { onDelete: "cascade" }),
+  candidateId: int("candidateId")
+    .notNull()
+    .references(() => candidates.id, { onDelete: "cascade" }),
   company: varchar("company", { length: 255 }).notNull(),
   position: varchar("position", { length: 255 }),
   startDate: varchar("startDate", { length: 50 }),
@@ -104,8 +124,12 @@ export type WorkHistory = typeof workHistories.$inferSelect;
 
 export const interviews = mysqlTable("interviews", {
   id: int("id").primaryKey().autoincrement(),
-  candidateId: int("candidateId").notNull().references(() => candidates.id, { onDelete: "cascade" }),
-  positionId: int("positionId").references(() => positions.id, { onDelete: "set null" }),
+  candidateId: int("candidateId")
+    .notNull()
+    .references(() => candidates.id, { onDelete: "cascade" }),
+  positionId: int("positionId").references(() => positions.id, {
+    onDelete: "set null",
+  }),
   stage: varchar("stage", { length: 100 }),
   interviewer: varchar("interviewer", { length: 255 }),
   scheduledTime: varchar("scheduledTime", { length: 50 }),
@@ -118,7 +142,9 @@ export const interviews = mysqlTable("interviews", {
   scoreCulture: int("scoreCulture"),
   totalScore: double("totalScore"),
   feedback: text("feedback"),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type Interview = typeof interviews.$inferSelect;
@@ -126,8 +152,12 @@ export type InsertInterview = typeof interviews.$inferInsert;
 
 export const offers = mysqlTable("offers", {
   id: int("id").primaryKey().autoincrement(),
-  candidateId: int("candidateId").notNull().references(() => candidates.id, { onDelete: "cascade" }),
-  positionId: int("positionId").references(() => positions.id, { onDelete: "set null" }),
+  candidateId: int("candidateId")
+    .notNull()
+    .references(() => candidates.id, { onDelete: "cascade" }),
+  positionId: int("positionId").references(() => positions.id, {
+    onDelete: "set null",
+  }),
   baseSalary: int("baseSalary"),
   bonus: double("bonus"),
   stock: int("stock"),
@@ -139,8 +169,12 @@ export const offers = mysqlTable("offers", {
   competitorOffers: int("competitorOffers").default(0),
   acceptanceProbability: int("acceptanceProbability"),
   notes: text("notes"),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
-  updatedAt: datetime("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
+  updatedAt: datetime("updatedAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type Offer = typeof offers.$inferSelect;
@@ -166,10 +200,14 @@ export const alerts = mysqlTable("alerts", {
   type: varchar("type", { length: 50 }),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  candidateId: int("candidateId").references(() => candidates.id, { onDelete: "set null" }),
+  candidateId: int("candidateId").references(() => candidates.id, {
+    onDelete: "set null",
+  }),
   isRead: int("isRead").default(0),
   action: varchar("action", { length: 100 }),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type Alert = typeof alerts.$inferSelect;
@@ -182,18 +220,26 @@ export const auditLogs = mysqlTable("auditLogs", {
   userId: int("userId"),
   userName: varchar("userName", { length: 100 }),
   changes: text("changes"),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
+  createdAt: datetime("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP()`),
 });
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 
-export const notificationSubscriptions = mysqlTable("notificationSubscriptions", {
-  id: int("id").primaryKey().autoincrement(),
-  channel: varchar("channel", { length: 50 }).notNull(),
-  webhookUrl: varchar("webhookUrl", { length: 500 }).notNull(),
-  enabled: int("enabled").default(1),
-  createdBy: int("createdBy"),
-  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP()`),
-});
+export const notificationSubscriptions = mysqlTable(
+  "notificationSubscriptions",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    channel: varchar("channel", { length: 50 }).notNull(),
+    webhookUrl: varchar("webhookUrl", { length: 500 }).notNull(),
+    enabled: int("enabled").default(1),
+    createdBy: int("createdBy"),
+    createdAt: datetime("createdAt")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP()`),
+  }
+);
 
-export type NotificationSubscription = typeof notificationSubscriptions.$inferSelect;
+export type NotificationSubscription =
+  typeof notificationSubscriptions.$inferSelect;

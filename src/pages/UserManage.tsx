@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Search, Plus, X, Shield, UserX, UserCheck, Loader2, Key } from "lucide-react";
+import {
+  Search,
+  Plus,
+  X,
+  Shield,
+  UserX,
+  UserCheck,
+  Loader2,
+  Key,
+} from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
 const statusOptions = ["全部", "active", "disabled"];
@@ -157,9 +166,15 @@ export default function UserManage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {users.map((u: any) => {
-                  const isSelf = currentUser && typeof currentUser === "object" && (currentUser as any).id === u.id;
+                  const isSelf =
+                    currentUser &&
+                    typeof currentUser === "object" &&
+                    (currentUser as any).id === u.id;
                   return (
-                    <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr
+                      key={u.id}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2D8FF0] to-[#06D6A0] flex items-center justify-center text-white text-xs font-semibold">
@@ -238,12 +253,20 @@ export default function UserManage() {
                             }`}
                             title={u.status === "active" ? "禁用" : "启用"}
                           >
-                            {updateMutation.isPending ? "..." : u.status === "active" ? "禁用" : "启用"}
+                            {updateMutation.isPending
+                              ? "..."
+                              : u.status === "active"
+                                ? "禁用"
+                                : "启用"}
                           </button>
                           <button
                             onClick={() => {
                               if (isSelf) return;
-                              if (confirm(`确认删除用户 ${u.username}？此操作不可恢复。`)) {
+                              if (
+                                confirm(
+                                  `确认删除用户 ${u.username}？此操作不可恢复。`
+                                )
+                              ) {
                                 deleteMutation.mutate(u.id);
                               }
                             }}
@@ -259,7 +282,10 @@ export default function UserManage() {
                 })}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-16 text-center text-sm text-[#94A3B8]">
+                    <td
+                      colSpan={5}
+                      className="px-5 py-16 text-center text-sm text-[#94A3B8]"
+                    >
                       暂无用户数据
                     </td>
                   </tr>
@@ -322,11 +348,16 @@ export default function UserManage() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowCreate(false)} />
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowCreate(false)}
+          />
           <div className="relative bg-white rounded-2xl shadow-2xl w-[440px]">
             <div className="p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[#1E293B]">创建用户</h2>
+                <h2 className="text-lg font-semibold text-[#1E293B]">
+                  创建用户
+                </h2>
                 <button
                   onClick={() => setShowCreate(false)}
                   className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"
@@ -336,35 +367,49 @@ export default function UserManage() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">用户名</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    用户名
+                  </label>
                   <input
                     value={newUser.username}
-                    onChange={e => setNewUser({ ...newUser, username: e.target.value })}
+                    onChange={e =>
+                      setNewUser({ ...newUser, username: e.target.value })
+                    }
                     placeholder="字母或数字，至少2位"
                     className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">密码</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    密码
+                  </label>
                   <input
                     type="password"
                     value={newUser.password}
-                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                    onChange={e =>
+                      setNewUser({ ...newUser, password: e.target.value })
+                    }
                     placeholder="至少4位"
                     className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">姓名</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    姓名
+                  </label>
                   <input
                     value={newUser.name}
-                    onChange={e => setNewUser({ ...newUser, name: e.target.value })}
+                    onChange={e =>
+                      setNewUser({ ...newUser, name: e.target.value })
+                    }
                     placeholder="如：张三"
                     className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">角色</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    角色
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {roleList.map((r: any) => (
                       <button
@@ -392,7 +437,12 @@ export default function UserManage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => {
-                    if (!newUser.username || !newUser.password || !newUser.name || newUser.roleIds.length === 0) {
+                    if (
+                      !newUser.username ||
+                      !newUser.password ||
+                      !newUser.name ||
+                      newUser.roleIds.length === 0
+                    ) {
                       alert("请填写所有字段并选择至少一个角色");
                       return;
                     }
@@ -418,11 +468,16 @@ export default function UserManage() {
       {/* Edit Modal */}
       {showEdit && editingUser && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowEdit(false)} />
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowEdit(false)}
+          />
           <div className="relative bg-white rounded-2xl shadow-2xl w-[440px]">
             <div className="p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[#1E293B]">编辑用户</h2>
+                <h2 className="text-lg font-semibold text-[#1E293B]">
+                  编辑用户
+                </h2>
                 <button
                   onClick={() => setShowEdit(false)}
                   className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"
@@ -432,7 +487,9 @@ export default function UserManage() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">用户名</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    用户名
+                  </label>
                   <input
                     value={editingUser.username}
                     disabled
@@ -440,15 +497,21 @@ export default function UserManage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">姓名</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    姓名
+                  </label>
                   <input
                     value={editData.name}
-                    onChange={e => setEditData({ ...editData, name: e.target.value })}
+                    onChange={e =>
+                      setEditData({ ...editData, name: e.target.value })
+                    }
                     className="w-full h-10 px-3.5 bg-slate-100/80 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D8FF0]/20"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">角色</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    角色
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {roleList.map((r: any) => (
                       <button
@@ -473,7 +536,9 @@ export default function UserManage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">状态</label>
+                  <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                    状态
+                  </label>
                   <div className="flex gap-2">
                     {(["active", "disabled"] as const).map(s => (
                       <button
@@ -500,7 +565,10 @@ export default function UserManage() {
                       alert("请填写姓名并选择至少一个角色");
                       return;
                     }
-                    updateMutation.mutate({ id: editingUser.id, data: editData });
+                    updateMutation.mutate({
+                      id: editingUser.id,
+                      data: editData,
+                    });
                   }}
                   disabled={updateMutation.isPending}
                   className="flex-1 h-10 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors disabled:opacity-40"
@@ -522,11 +590,16 @@ export default function UserManage() {
       {/* Reset Password Modal */}
       {showResetPwd && editingUser && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowResetPwd(false)} />
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowResetPwd(false)}
+          />
           <div className="relative bg-white rounded-2xl shadow-2xl w-[400px]">
             <div className="p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[#1E293B]">重置密码</h2>
+                <h2 className="text-lg font-semibold text-[#1E293B]">
+                  重置密码
+                </h2>
                 <button
                   onClick={() => setShowResetPwd(false)}
                   className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"
@@ -535,10 +608,16 @@ export default function UserManage() {
                 </button>
               </div>
               <p className="text-sm text-[#94A3B8] mb-4">
-                为用户 <strong className="text-[#1E293B]">{editingUser.username}</strong> 设置新密码
+                为用户{" "}
+                <strong className="text-[#1E293B]">
+                  {editingUser.username}
+                </strong>{" "}
+                设置新密码
               </p>
               <div>
-                <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">新密码</label>
+                <label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                  新密码
+                </label>
                 <input
                   type="text"
                   value={resetPassword}
@@ -554,7 +633,10 @@ export default function UserManage() {
                       alert("密码至少4位");
                       return;
                     }
-                    resetPwdMutation.mutate({ userId: editingUser.id, newPassword: resetPassword });
+                    resetPwdMutation.mutate({
+                      userId: editingUser.id,
+                      newPassword: resetPassword,
+                    });
                   }}
                   disabled={resetPwdMutation.isPending}
                   className="flex-1 h-10 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-40"

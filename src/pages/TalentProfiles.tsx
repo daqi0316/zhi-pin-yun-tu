@@ -624,9 +624,7 @@ export default function TalentProfiles() {
               {/* Actions */}
               <div className="flex gap-3">
                 <button
-                  onClick={() =>
-                    navigate(`/offers?candidateId=${selectedId}`)
-                  }
+                  onClick={() => navigate(`/offers?candidateId=${selectedId}`)}
                   className="h-11 px-6 bg-[#2D8FF0] text-white rounded-xl text-sm font-medium hover:bg-[#1a7de0] transition-colors flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />

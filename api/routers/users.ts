@@ -154,9 +154,9 @@ export const usersRouter = createRouter({
 
       const userId = inserted.insertId ?? inserted.id;
 
-      await db.insert(userRoles).values(
-        input.roleIds.map(roleId => ({ userId, roleId }))
-      );
+      await db
+        .insert(userRoles)
+        .values(input.roleIds.map(roleId => ({ userId, roleId })));
 
       return { id: userId, success: true };
     }),
@@ -187,9 +187,7 @@ export const usersRouter = createRouter({
           .where(inArray(roles.id, input.data.roleIds));
         updateData.role = roleList[0]?.name ?? "user";
 
-        await db
-          .delete(userRoles)
-          .where(eq(userRoles.userId, input.id));
+        await db.delete(userRoles).where(eq(userRoles.userId, input.id));
         await db.insert(userRoles).values(
           input.data.roleIds.map(roleId => ({
             userId: input.id,
